@@ -9,6 +9,7 @@ import cx from 'classnames';
 import hoistNonReactStatic from 'hoist-non-react-statics';
 import Button from '../components/Button';
 import {filter} from '../utils/tpl';
+import {Icon} from '../components/icons';
 
 export interface CopyableConfig {}
 
@@ -38,7 +39,8 @@ export const HocCopyable = () => (Component: React.ComponentType<any>): any => {
         className,
         data,
         noHoc,
-        classnames: cx
+        classnames: cx,
+        translate: __
       } = this.props;
 
       if (copyable && !noHoc) {
@@ -53,12 +55,14 @@ export const HocCopyable = () => (Component: React.ComponentType<any>): any => {
               className={cx(`Field--copyable`, className)}
             >
               <Component {...this.props} wrapperComponent={''} noHoc />
-              <i
+              <a
                 key="edit-btn"
-                data-tooltip="点击复制"
-                className={cx('Field-copyBtn fa fa-clipboard')}
+                data-tooltip={__('点击复制')}
+                className={cx('Field-copyBtn')}
                 onClick={this.handleClick.bind(this, content)}
-              />
+              >
+                <Icon icon="copy" className="icon" />
+              </a>
             </Component>
           );
         }

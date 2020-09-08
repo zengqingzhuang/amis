@@ -1,12 +1,11 @@
 import React from 'react';
-import {themeable, ClassNamesFn} from '../theme';
+import {themeable, ClassNamesFn, ThemeProps} from '../theme';
 import {autobind} from '../utils/helper';
 import Modal from './Modal';
 import {Icon} from './icons';
+import {LocaleProps, localeable} from '../locale';
 
-export interface ImageGalleryProps {
-  classnames: ClassNamesFn;
-  classPrefix: string;
+export interface ImageGalleryProps extends ThemeProps, LocaleProps {
   children: React.ReactNode;
   modalContainer?: () => HTMLElement;
 }
@@ -87,6 +86,7 @@ export class ImageGallery extends React.Component<
   render() {
     const {children, classnames: cx, modalContainer} = this.props;
     const {index, items} = this.state;
+    const __ = this.props.translate;
 
     return (
       <>
@@ -103,12 +103,12 @@ export class ImageGallery extends React.Component<
           container={modalContainer}
         >
           <a
-            data-tooltip="关闭"
+            data-tooltip={__('关闭')}
             data-position="left"
             className={cx('ImageGallery-close')}
             onClick={this.close}
           >
-            <Icon icon="close" />
+            <Icon icon="close" className="icon" />
           </a>
           {~index && items[index] ? (
             <>
@@ -127,7 +127,7 @@ export class ImageGallery extends React.Component<
                       )}
                       onClick={this.prev}
                     >
-                      <Icon icon="prev" />
+                      <Icon icon="prev" className="icon" />
                     </a>
                     <a
                       className={cx(
@@ -136,7 +136,7 @@ export class ImageGallery extends React.Component<
                       )}
                       onClick={this.next}
                     >
-                      <Icon icon="next" />
+                      <Icon icon="next" className="icon" />
                     </a>
                   </>
                 ) : null}
@@ -146,7 +146,7 @@ export class ImageGallery extends React.Component<
           {items.length > 1 ? (
             <div className={cx('ImageGallery-footer')}>
               <a className={cx('ImageGallery-prevList is-disabled')}>
-                <Icon icon="prev" />
+                <Icon icon="prev" className="icon" />
               </a>
               <div className={cx('ImageGallery-itemsWrap')}>
                 <div className={cx('ImageGallery-items')}>
@@ -166,7 +166,7 @@ export class ImageGallery extends React.Component<
                 </div>
               </div>
               <a className={cx('ImageGallery-nextList is-disabled')}>
-                <Icon icon="next" />
+                <Icon icon="next" className="icon" />
               </a>
             </div>
           ) : null}
@@ -176,4 +176,4 @@ export class ImageGallery extends React.Component<
   }
 }
 
-export default themeable(ImageGallery);
+export default themeable(localeable(ImageGallery));

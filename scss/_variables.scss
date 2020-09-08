@@ -123,8 +123,8 @@ $zindex-affix: 900 !default;
 $zindex-dropdown: 1000 !default;
 $zindex-sticky: 1100 !default;
 $zindex-fixed: 1200 !default;
-$zindex-modal: 1300 !default;
-$zindex-popover: 1400 !default;
+$zindex-popover: 1300 !default;
+$zindex-modal: 1400 !default;
 $zindex-contextmenu: 1500 !default;
 $zindex-tooltip: 1600 !default;
 $zindex-toast: 2000 !default;
@@ -137,6 +137,16 @@ $gap-lg: px2rem(30px) !default;
 
 $icon-color: $gray600 !default;
 $icon-onHover-color: $gray900 !default;
+
+$label--default-bg: $gray700 !default;
+$label--primary-bg: $primary !default;
+$label--success-bg: $success !default;
+$label--info-bg: $info !default;
+$label--warning-bg: $warning !default;
+$label--danger-bg: $danger !default;
+
+$label-color: #fff !default;
+$label-link--hover-color: #fff !default;
 
 // Components
 $scrollbar-width: px2rem(17px) !default;
@@ -168,9 +178,7 @@ $Layout-asideLink-fontSize: $fontSizeBase !default;
 $Layout-asideLink-color: #b4b6bd !default;
 $Layout-asideLink-onHover-color: #fff !default;
 $Layout-asideLink-onActive-color: #fff !default;
-$Layout-asideLink-arrowVendor: 'FontAwesome' !default;
-$Layout-asideLink-arrowFontSize: $fontFamilyBase !default;
-$Layout-asideLink-arrowIcon: '\f105' !default;
+
 $Layout-asideLink-arrowColor: $Layout-asideLink-color !default;
 $Layout-asideLink-onActive-arrowColor: $Layout-asideLink-onActive-color !default;
 $Layout-asideLabel-color: darken($Layout-aside-color, 10%) !default;
@@ -207,7 +215,7 @@ $Modal-bg: $background !default;
 $Modal-overlay-bg: rgba(0, 0, 0, 0.6) !default;
 $Modal-content-startMarginTop: px2rem(60px) !default;
 $Modal-content-stepMarginTop: px2rem(30px) !default;
-$Modal-content-minHeight: px2rem(200px) !default;
+$Modal-content-minHeight: unset !default;
 $Modal-content-borderWidth: $borderWidth !default;
 $Modal-content-borderColor: $borderColor !default;
 $Modal-content-borderRadius: $borderRadius !default;
@@ -310,11 +318,12 @@ $Toast-borderRadius: $borderRadiusLg !default;
 $Toast-paddingY: $gap-base !default;
 $Toast-paddingX: $gap-base !default;
 $Toast-paddingL: px2rem(40px) !default;
-$Toast--info-paddingL: $Toast-paddingL !default;
 $Toast-border-width: 0 !default;
-$Toast-icon-fontSize: px2rem(30px) !default;
 $Toast-opacity: 0.8 !default;
-$Toast-display: block !default;
+$Toast-title-display: block !default;
+$Toast-icon-fillHeight: true !default;
+$Toast-icon-width: px2rem(30px) !default;
+$Toast-icon-height: $Toast-icon-width !default;
 
 $Toast-color: $white !default;
 
@@ -334,12 +343,8 @@ $Toast--warning-color: $Toast-color !default;
 $Toast--warning-bgColor: $warning !default;
 $Toast--warning-borderColor: $warning !default;
 
-$Toast-iconVendor: 'FontAwesome' !default;
-
-$Toast--error-icon: '\f06a' !default;
-$Toast--warning-icon: '\f071' !default;
-$Toast--info-icon: '\f05a' !default;
-$Toast--success-icon: '\f00c' !default;
+$Toast-close-color: $white !default;
+$Toast-close--onHover-color: $Toast-close-color !default;
 
 // alert
 $Alert-fontSize: $fontSizeBase !default;
@@ -496,20 +501,15 @@ $Table-heading-bg: $white !default;
 $Table--unsaved-heading-bg: #e8f0fe !default;
 $Table--unsaved-heading-color: #4285f4 !default;
 
-$Table-expandBtn-vendor: 'FontAwesome' !default;
-$Table-expandBtn-fontSize: px2rem(20px) !default;
 $Table-expandBtn-color: $info !default;
-$Table-expandBtn-icon: '\f105' !default;
 
 $TableCell-sortBtn-width: px2rem(8px) !default;
-$TableCell-sortBtn--down-iconVendor: 'fontAwesome' !default;
-$TableCell-sortBtn--down-icon: '\f0dd' !default;
-$TableCell-sortBtn--up-iconVendor: 'fontAwesome' !default;
-$TableCell-sortBtn--up-icon: '\f0de' !default;
-$TableCell-sortBtn--default-iconVendor: 'fontAwesome' !default;
-$TableCell-sortBtn--default-icon: '\f0dc' !default;
-$TableCell-sortBtn--default-opacity: 0.4 !default;
-$TableCell-sortBtn--default-onActive-opacity: 0.4 !default;
+$TableCell-sortBtn--default-opacity: 0 !default;
+$TableCell-sortBtn--default-onActive-opacity: 1 !default;
+
+$TableCell-searchBtn--onActive-color: $primary !default;
+$TableCell-filterBtn--onActive-color: $primary !default;
+$TableCell-sortBtn--onActive-color: $primary !default;
 
 // Cards
 $Cards-fixedTop-boxShadow: $boxShadow !default;
@@ -526,6 +526,7 @@ $Card-actions-borderColor: lighten($Card-borderColor, 5%) !default;
 $Card-actions-onHover-bg: darken($white, 5%) !default;
 $Card-actions-onHover-color: darken($text-color, 5%) !default;
 $Card-actions-onChecked-onHover-bg: darken(#d9f3fb, 5%) !default;
+$Card-actions-fontSize: $fontSizeBase !default;
 
 $Card-onChecked-bg: #d9f3fb !default;
 $Card-onChecked-borderColor: darken($Table-onChecked-bg, 10%) !default;
@@ -569,8 +570,8 @@ $QuickEdit-onFocus-borderColor: $info !default;
 $QuickEdit-onFocus-borderWidth: $borderWidth !default;
 
 // Copyable
-$Copyable-iconColor: inherit !default;
-$Copyable-onHover-iconColor: inherit !default;
+$Copyable-iconColor: $icon-color !default;
+$Copyable-onHover-iconColor: $icon-onHover-color !default;
 
 // PopOverAble
 $PopOverAble-iconColor: inherit !default;
@@ -724,9 +725,6 @@ $Form-selectValue-borderColor: saturate(
   2.5%
 ) !default;
 $Form-selectValue-fontSize: $fontSizeSm !default;
-$Form-select-caret-vender: 'FontAwesome' !default;
-$Form-select-caret-icon: '\f0d7' !default;
-$Form-select-caret-fontSize: $fontSizeBase !default;
 $Form-select-caret-iconColor: $icon-color !default;
 $Form-select-caret-onHover-iconColor: $icon-onHover-color !default;
 $Form-select-outer-borderWidth: px2rem(1px) !default;
@@ -965,7 +963,7 @@ $DropDown-menuItem-paddingY: (
   ) / 2 !default;
 $DropDown-menuItem-paddingX: $gap-sm !default;
 $DropDown-menuItem-onHover-color: inherit !default;
-$DropDown-menuItem-onHover-bg: $Button--default-onHover-bg !default;
+$DropDown-menuItem-onHover-bg: $ListMenu-item--onHover-bg !default;
 
 // Checks
 $Checkbox-gap: $gap-sm !default;
@@ -1022,12 +1020,12 @@ $ColorPicker-paddingY: (
   )/2 - $ColorPicker-borderWidth !default;
 $ColorPicker-placeholderColor: $Form-input-placeholderColor !default;
 $ColorPicker-onFocused-borderColor: $Form-input-onFocused-borderColor !default;
-$DatePicker-onHover-borderColor: $Form-input-borderColor !default;
 
 // datepicker
 $DatePicker-color: $Form-input-color !default;
 $DatePicker-bg: $white !default;
-$DatePicker-onHover-bg: darken($DatePicker-bg, 5%) !default;
+$DatePicker-onHover-borderColor: $Form-input-onFocused-borderColor !default;
+$DatePicker-onHover-bg: $DatePicker-bg !default;
 $DatePicker-borderWidth: $Form-input-borderWidth !default;
 $DatePicker-borderColor: $Form-input-borderColor !default;
 $DatePicker-borderRadius: $Form-input-borderRadius !default;
@@ -1042,15 +1040,6 @@ $DatePicker-placeholderColor: $Form-input-placeholderColor !default;
 $DatePicker-iconColor: $icon-color !default;
 $DatePicker-onHover-iconColor: $icon-onHover-color !default;
 $DatePicker-onFocused-borderColor: $Form-input-onFocused-borderColor !default;
-$DatePicker-toggler-vendor: 'FontAwesome' !default;
-$DatePicker-toggler-fontSize: $Form-fontSize !default;
-$DatePicker-toggler-icon: '\f073' !default;
-$DatePicker-prevBtn-vendor: 'FontAwesome' !default;
-$DatePicker-prevBtn-fontSize: $fontSizeMd !default;
-$DatePicker-prevBtn-icon: '\f104' !default;
-$DatePicker-nextBtn-vendor: 'FontAwesome' !default;
-$DatePicker-nextBtn-fontSize: $fontSizeMd !default;
-$DatePicker-nextBtn-icon: '\f105' !default;
 $DatePicker-header-select-borderColor: #fff !default;
 
 $Calendar-fontSize: $fontSizeBase !default;
@@ -1211,7 +1200,7 @@ $Combo--vertical-itemToolbar-positionTop: -$Combo--vertical-itemToolbar-height !
 $Combo--vertical-itemToolbar-positionRight: px2rem(5px) !default;
 
 $Combo--horizontal-item-gap: px2rem(5px);
-$Combo--horizontal-dragger-top: px2rem(8px) !default;
+$Combo--horizontal-dragger-top: $Form-label-paddingTop !default;
 
 // Sub Form
 $SubForm--addBtn-bg: $Button--info-bg !default;
@@ -1332,7 +1321,7 @@ $Wizard-steps-ulDisplay: block !default;
 $Wizard-steps-height: px2rem(40px) !default;
 $Wizard-steps-padding: 0 !default;
 $Wizard-steps-liAfterContent: '' !default;
-$Wizard-steps-liVender: 'FontAwesome' !default;
+$Wizard-steps-liVender: '' !default;
 $Wizard-steps-liAfterBorder: px2rem(20px) solid transparent !default;
 $Wizard-steps-li-onActive-color: $info !default;
 $Wizard-steps-li-onActive-bg: #fff !default;
@@ -1350,6 +1339,7 @@ $Wizard-steps-bg--isComplete: #f1f5f9 !default;
 
 // Page
 $Page-aside-width: px2rem(200px) !default;
+$Page-aside-maxWidth: px2rem(300px) !default;
 $Page-aside-bg: desaturate(darken($light, 3%), 2.5%) !default;
 $Page-content-paddingY: 0 !default;
 $Page-content-paddingX: 0 !default;
@@ -1395,9 +1385,6 @@ $Panel-fixedBottom-borderTop: none !default;
 $Pagination-height: px2rem(30px) !default;
 $Pagination-minWidth: px2rem(30px) !default;
 $Pagination-padding: 0 px2rem(8px) !default;
-$Pagination-arrowVendor: 'FontAwesome' !default;
-$Pagination-prevArrowContent: '\f053' !default;
-$Pagination-nextArrowContent: '\f054' !default;
 $Pagination-fontSize: $fontSizeBase !default;
 $Pagination-onActive-backgroundColor: $primary !default;
 $Pagination-onActive-color: $white !default;
@@ -1409,16 +1396,7 @@ $Transfer-title-bg: #f6f8f8 !default;
 // Tree
 $TreeSelect-popover-bg: #fff !default;
 $Tree-indent: px2rem(20px) !default;
-$Tree-itemArrowWidth: px2rem(16px) !default;
-$Tree-arrowVendor: 'FontAwesome' !default;
-$Tree-unfoldedArrowContent: '\f107' !default;
-$Tree-foldedArrowContent: '\f105' !default;
-$Tree-rootIconVendor: 'FontAwesome' !default;
-$Tree-rootIconContent: '\f015' !default;
-$Tree-leafIconVendor: 'FontAwesome' !default;
-$Tree-leafIconContent: '\f15b' !default;
-$Tree-folderIconVendor: 'FontAwesome' !default;
-$Tree-folderIconContent: '\f07b' !default;
+$Tree-itemArrowWidth: px2rem(10px) !default;
 $Tree-itemLabel--onChecked-color: $Form-selectValue-color !default;
 $Tree-itemHeight: px2rem(30px) !default;
 $Tree-item-onHover-bg: rgba(0, 126, 255, 0.08) !default;
@@ -1491,6 +1469,7 @@ $Carousel-imageDescription-bottom: px2rem(25px) !default;
 // Picker
 $Picker-iconColor: $icon-color !default;
 $Picker-onHover-iconColor: $icon-onHover-color !default;
-$Picker-btn-vendor: 'FontAwesome' !default;
-$Picker-btn-fontSize: $Form-fontSize !default;
-$Picker-btn-icon: '\f2d2' !default;
+
+// Status
+$Satus-icon-width: px2rem(20px) !default;
+$Satus-icon-height: $Satus-icon-width !default;

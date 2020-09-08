@@ -81,9 +81,9 @@ export function syncDataFromSuper(
   // 如果是 form store，则从父级同步 formItem 种东西。
   if (store && store.storeType === 'FormStore') {
     keys = uniq(
-      (store as IFormStore).items.map(item =>
-        `${item.name}`.replace(/\..*$/, '')
-      )
+      (store as IFormStore).items
+        .map(item => `${item.name}`.replace(/\..*$/, ''))
+        .concat(Object.keys(obj))
     );
   } else if (force) {
     keys = Object.keys(obj);
@@ -182,6 +182,9 @@ export function setVariable(
       data = data[key] = {
         ...data[key]
       };
+    } else if (Array.isArray(data[key])) {
+      data[key] = data[key].concat();
+      data = data[key];
     } else if (data[key]) {
       // throw new Error(`目标路径不是纯对象，不能覆盖`);
       // 强行转成对象
@@ -607,7 +610,7 @@ export function isBreakpoint(str: string): boolean {
 
   const breaks = str.split(/\s*,\s*|\s+/);
 
-  if (window.matchMedia) {
+  if ((window as any).matchMedia) {
     return breaks.some(
       item =>
         item === '*' ||
@@ -929,7 +932,17 @@ export function someTree<T extends TreeItem>(
   tree: Array<T>,
   iterator: (item: T, key: number, level: number, paths: Array<T>) => boolean
 ): boolean {
-  return !everyTree(tree, iterator);
+  let result = false;
+
+  everyTree(tree, (item: T, key: number, level: number, paths: Array<T>) => {
+    if (iterator(item, key, level, paths)) {
+      result = true;
+      return false;
+    }
+    return true;
+  });
+
+  return result;
 }
 
 /**
@@ -1095,7 +1108,7 @@ export function sortArray<T extends any>(
   field: string,
   dir: -1 | 1
 ): Array<T> {
-  return items.sort((a, b) => {
+  return items.sort((a: any, b: any) => {
     let ret: number;
     const a1 = a[field];
     const b1 = b[field];

@@ -5,12 +5,13 @@ import {SchemaNode, Schema, Action} from '../types';
 import {filter} from '../utils/tpl';
 import Modal from '../components/Modal';
 import findLast from 'lodash/findLast';
-import {guid, isVisible} from '../utils/helper';
+import {guid, isVisible, autobind} from '../utils/helper';
 import {reaction} from 'mobx';
 import {Icon} from '../components/icons';
 import {ModalStore, IModalStore} from '../store/modal';
 import {findDOMNode} from 'react-dom';
 import {Spinner} from '../components';
+import {IServiceStore} from '../store/service';
 
 export interface DialogProps extends RendererProps {
   title?: string; // 标题
@@ -122,7 +123,7 @@ export default class Dialog extends React.Component<DialogProps, DialogState> {
   }
 
   buildActions(): Array<Action> {
-    const {actions, confirm} = this.props;
+    const {actions, confirm, translate: __} = this.props;
 
     if (typeof actions !== 'undefined') {
       return actions;
@@ -132,14 +133,14 @@ export default class Dialog extends React.Component<DialogProps, DialogState> {
     ret.push({
       type: 'button',
       actionType: 'cancel',
-      label: '取消'
+      label: __('取消')
     });
 
     if (confirm) {
       ret.push({
         type: 'button',
         actionType: 'confirm',
-        label: '确认',
+        label: __('确认'),
         primary: true
       });
     }
@@ -247,8 +248,6 @@ export default class Dialog extends React.Component<DialogProps, DialogState> {
   }
 
   handleExited() {
-    const {store} = this.props;
-    store.reset();
     this.state.entered &&
       this.setState({
         entered: false
@@ -294,6 +293,13 @@ export default class Dialog extends React.Component<DialogProps, DialogState> {
     });
   }
 
+  @autobind
+  getPopOverContainer() {
+    return (findDOMNode(this) as HTMLElement).querySelector(
+      `.${this.props.classPrefix}Modal-content`
+    );
+  }
+
   renderBody(body: SchemaNode, key?: any): React.ReactNode {
     let {render, store} = this.props;
 
@@ -306,7 +312,11 @@ export default class Dialog extends React.Component<DialogProps, DialogState> {
       disabled: (body && (body as any).disabled) || store.loading,
       onAction: this.handleAction,
       onFinished: this.handleChildFinished,
-      affixOffsetTop: 0
+      popOverContainer: this.getPopOverContainer,
+      affixOffsetTop: 0,
+      onChange: this.handleFormChange,
+      onInit: this.handleFormInit,
+      onSaved: this.handleFormSaved
     };
 
     if (!(body as Schema).type) {
@@ -322,10 +332,6 @@ export default class Dialog extends React.Component<DialogProps, DialogState> {
         submitText: null,
         ...schema
       };
-
-      subProps.onChange = this.handleFormChange;
-      subProps.onInit = this.handleFormInit;
-      subProps.onSaved = this.handleFormSaved;
     }
 
     return render(`body${key ? `/${key}` : ''}`, schema, subProps);
@@ -380,7 +386,8 @@ export default class Dialog extends React.Component<DialogProps, DialogState> {
       showCloseButton,
       env,
       classnames: cx,
-      classPrefix
+      classPrefix,
+      translate: __
     } = this.props;
 
     // console.log('Render Dialog');
@@ -408,7 +415,7 @@ export default class Dialog extends React.Component<DialogProps, DialogState> {
           <div className={cx('Modal-header', headerClassName)}>
             {showCloseButton !== false && !store.loading ? (
               <a
-                data-tooltip="关闭弹窗"
+                data-tooltip={__('关闭')}
                 data-position="left"
                 onClick={this.handleSelfClose}
                 className={cx('Modal-close')}
@@ -417,14 +424,14 @@ export default class Dialog extends React.Component<DialogProps, DialogState> {
               </a>
             ) : null}
             <div className={cx('Modal-title')}>
-              {filter(title, store.formData)}
+              {filter(__(title), store.formData)}
             </div>
           </div>
         ) : title ? (
           <div className={cx('Modal-header', headerClassName)}>
             {showCloseButton !== false && !store.loading ? (
               <a
-                data-tooltip="关闭弹窗"
+                data-tooltip={__('关闭')}
                 onClick={this.handleSelfClose}
                 className={cx('Modal-close')}
               >
@@ -437,7 +444,7 @@ export default class Dialog extends React.Component<DialogProps, DialogState> {
           </div>
         ) : showCloseButton !== false && !store.loading ? (
           <a
-            data-tooltip="关闭弹窗"
+            data-tooltip={__('关闭')}
             onClick={this.handleSelfClose}
             className={cx('Modal-close')}
           >
@@ -510,7 +517,9 @@ export default class Dialog extends React.Component<DialogProps, DialogState> {
   storeType: ModalStore.name,
   storeExtendsData: false,
   name: 'dialog',
-  isolateScope: true
+  isolateScope: true,
+  shouldSyncSuperStore: (store: IServiceStore, props: any) =>
+    store.dialogOpen || props.show
 })
 export class DialogRenderer extends Dialog {
   static contextType = ScopedContext;
@@ -548,6 +557,15 @@ export class DialogRenderer extends Dialog {
     }
 
     if (!targets.length) {
+      const page = findLast(
+        components,
+        component => component.props.type === 'page'
+      );
+
+      if (page) {
+        components.push(...page.context.getComponents());
+      }
+
       const form = findLast(
         components,
         component => component.props.type === 'form'
@@ -586,7 +604,9 @@ export class DialogRenderer extends Dialog {
           ) {
             onConfirm && onConfirm(values, rawAction || action, ctx, targets);
           } else if (action.close) {
-            this.handleSelfClose();
+            action.close === true
+              ? this.handleSelfClose()
+              : this.closeTarget(action.close);
           }
           store.markBusying(false);
         })
@@ -630,6 +650,7 @@ export class DialogRenderer extends Dialog {
     ) {
       store.setCurrentAction(action);
       this.handleSelfClose();
+      action.close && this.closeTarget(action.close);
     } else if (action.actionType === 'confirm') {
       store.setCurrentAction(action);
       this.tryChildrenToHandle(
@@ -682,7 +703,10 @@ export class DialogRenderer extends Dialog {
             action.redirect && filter(action.redirect, store.data);
           reidrect && env.jumpTo(reidrect, action);
           action.reload && this.reloadTarget(action.reload, store.data);
-          action.close && this.handleSelfClose();
+          if (action.close) {
+            this.handleSelfClose();
+            this.closeTarget(action.close);
+          }
         })
         .catch(() => {});
     } else if (onAction) {
@@ -769,5 +793,10 @@ export class DialogRenderer extends Dialog {
   reloadTarget(target: string, data?: any) {
     const scoped = this.context as IScopedContext;
     scoped.reload(target, data);
+  }
+
+  closeTarget(target: string) {
+    const scoped = this.context as IScopedContext;
+    scoped.close(target);
   }
 }

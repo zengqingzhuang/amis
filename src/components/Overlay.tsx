@@ -13,6 +13,7 @@ import {findDOMNode} from 'react-dom';
 import React from 'react';
 import {calculatePosition, getContainer, ownerDocument} from '../utils/dom';
 import {autobind} from '../utils/helper';
+import {resizeSensor, getComputedStyle} from '../utils/resize-sensor';
 
 // @ts-ignore
 BasePosition.propTypes.placement = () => null;
@@ -21,6 +22,8 @@ BasePosition.propTypes.placement = () => null;
 class Position extends BasePosition {
   props: any;
   _lastTarget: any;
+  resizeDispose: Array<() => void>;
+  watchedTarget: any;
   setState: (state: any) => void;
 
   updatePosition(target: any) {
@@ -35,11 +38,23 @@ class Position extends BasePosition {
       });
     }
 
-    const overlay = findDOMNode(this as any);
+    const overlay = findDOMNode(this as any) as HTMLElement;
     const container = getContainer(
       this.props.container,
       ownerDocument(this).body
     );
+
+    if (
+      (!this.watchedTarget || this.watchedTarget !== target) &&
+      getComputedStyle(target, 'position') !== 'static'
+    ) {
+      this.resizeDispose?.forEach(fn => fn());
+      this.watchedTarget = target;
+      this.resizeDispose = [
+        resizeSensor(target, () => this.updatePosition(target)),
+        resizeSensor(overlay, () => this.updatePosition(target))
+      ];
+    }
 
     this.setState(
       calculatePosition(
@@ -50,6 +65,10 @@ class Position extends BasePosition {
         this.props.containerPadding
       )
     );
+  }
+
+  componentWillUnmount() {
+    this.resizeDispose?.forEach(fn => fn());
   }
 }
 

@@ -1,17 +1,19 @@
 import {ThemeProps, themeable} from '../theme';
 import React from 'react';
 import {InputBoxProps} from './InputBox';
-import uncontrollable from 'uncontrollable';
+import {uncontrollable} from 'uncontrollable';
 import {Icon} from './icons';
 import Input from './Input';
 import {autobind} from '../utils/helper';
+import {LocaleProps, localeable} from '../locale';
 
 export interface ResultBoxProps
   extends ThemeProps,
-    Omit<InputBoxProps, 'result' | 'prefix' | 'onChange'> {
+    LocaleProps,
+    Omit<InputBoxProps, 'result' | 'prefix' | 'onChange' | 'translate'> {
   onChange?: (value: string) => void;
   onResultClick?: (e: React.MouseEvent<HTMLElement>) => void;
-  result?: Array<any>;
+  result?: Array<any> | any;
   itemRender: (value: any) => JSX.Element;
   onResultChange?: (value: Array<any>) => void;
   allowInput?: boolean;
@@ -34,6 +36,16 @@ export class ResultBox extends React.Component<ResultBoxProps> {
   state = {
     isFocused: false
   };
+
+  inputRef: React.RefObject<any> = React.createRef();
+
+  focus() {
+    this.inputRef.current?.focus();
+  }
+
+  blur() {
+    this.inputRef.current?.blur();
+  }
 
   @autobind
   clearValue(e: React.MouseEvent<any>) {
@@ -96,6 +108,11 @@ export class ResultBox extends React.Component<ResultBoxProps> {
       onResultChange,
       onChange,
       onResultClick,
+      translate: __,
+      locale,
+      onKeyPress,
+      onFocus,
+      onBlur,
       ...rest
     } = this.props;
     const isFocused = this.state.isFocused;
@@ -107,9 +124,14 @@ export class ResultBox extends React.Component<ResultBoxProps> {
           className,
           isFocused ? 'is-focused' : '',
           disabled ? 'is-disabled' : '',
-          hasError ? 'is-error' : ''
+          hasError ? 'is-error' : '',
+          onResultClick ? 'is-clickable' : ''
         )}
         onClick={onResultClick}
+        tabIndex={!allowInput && !disabled && onFocus ? 0 : -1}
+        onKeyPress={allowInput ? undefined : onKeyPress}
+        onFocus={allowInput ? undefined : onFocus}
+        onBlur={allowInput ? undefined : onBlur}
       >
         {Array.isArray(result) && result.length ? (
           result.map((item, index) => (
@@ -117,35 +139,43 @@ export class ResultBox extends React.Component<ResultBoxProps> {
               <span className={cx('ResultBox-valueLabel')}>
                 {itemRender(item)}
               </span>
-              <a data-index={index} onClick={this.removeItem}>
-                <Icon icon="close" />
-              </a>
+              {!disabled ? (
+                <a data-index={index} onClick={this.removeItem}>
+                  <Icon icon="close" className="icon" />
+                </a>
+              ) : null}
             </div>
           ))
-        ) : allowInput ? null : (
+        ) : result && !Array.isArray(result) ? (
+          <span className={cx('ResultBox-singleValue')}>{result}</span>
+        ) : allowInput && !disabled ? null : (
           <span className={cx('ResultBox-placeholder')}>
-            {placeholder || '无'}
+            {__(placeholder || '无')}
           </span>
         )}
 
-        {allowInput ? (
+        {allowInput && !disabled ? (
           <Input
             {...rest}
+            onKeyPress={onKeyPress}
+            ref={this.inputRef}
             value={value || ''}
             onChange={this.handleChange}
-            placeholder={
+            placeholder={__(
               Array.isArray(result) && result.length
                 ? inputPlaceholder
                 : placeholder
-            }
+            )}
             onFocus={this.handleFocus}
             onBlur={this.handleBlur}
           />
-        ) : (
-          <span className={cx('ResultBox-mid')} />
-        )}
+        ) : null}
 
-        {clearable && !disabled && Array.isArray(result) && result.length ? (
+        {children}
+
+        {clearable &&
+        !disabled &&
+        (Array.isArray(result) ? result.length : result) ? (
           <a
             // data-tooltip="清空"
             // data-position="bottom"
@@ -155,16 +185,16 @@ export class ResultBox extends React.Component<ResultBoxProps> {
             <Icon icon="close" className="icon" />
           </a>
         ) : null}
-
-        {children}
       </div>
     );
   }
 }
 
 export default themeable(
-  uncontrollable(ResultBox, {
-    value: 'onChange',
-    result: 'onResultChange'
-  })
+  localeable(
+    uncontrollable(ResultBox, {
+      value: 'onChange',
+      result: 'onResultChange'
+    })
+  )
 );

@@ -5,21 +5,23 @@
  */
 
 import React from 'react';
-import {CheckboxesProps, Checkboxes} from './Checkboxes';
+import {BaseCheckboxesProps, BaseCheckboxes} from './Checkboxes';
 import {Options, Option} from './Select';
 import ListMenu from './ListMenu';
 import {autobind} from '../utils/helper';
 import ListRadios from './ListRadios';
 import {themeable} from '../theme';
-import uncontrollable from 'uncontrollable';
+import {uncontrollable} from 'uncontrollable';
 import ListCheckboxes from './ListCheckboxes';
 import TableCheckboxes from './TableCheckboxes';
 import TreeCheckboxes from './TreeCheckboxes';
 import ChainedCheckboxes from './ChainedCheckboxes';
 import Spinner from './Spinner';
 import TreeRadios from './TreeRadios';
+import {Icon} from './icons';
+import {localeable} from '../locale';
 
-export interface AssociatedCheckboxesProps extends CheckboxesProps {
+export interface AssociatedCheckboxesProps extends BaseCheckboxesProps {
   leftOptions: Options;
   leftDefaultValue?: any;
   leftMode?: 'tree' | 'list';
@@ -41,13 +43,30 @@ export interface AssociatedCheckboxesState {
   leftValue?: Option;
 }
 
-export class AssociatedCheckboxes extends Checkboxes<
+export class AssociatedCheckboxes extends BaseCheckboxes<
   AssociatedCheckboxesProps,
   AssociatedCheckboxesState
 > {
   state: AssociatedCheckboxesState = {
     leftValue: this.props.leftDefaultValue
   };
+
+  componentDidMount() {
+    const leftValue = this.state.leftValue;
+    const {options, onDeferLoad} = this.props;
+
+    if (leftValue) {
+      const selectdOption = ListRadios.resolveSelected(
+        leftValue,
+        options,
+        (option: Option) => option.ref
+      );
+
+      if (selectdOption && onDeferLoad && selectdOption.defer) {
+        onDeferLoad(selectdOption);
+      }
+    }
+  }
 
   @autobind
   leftOption2Value(option: Option) {
@@ -62,12 +81,17 @@ export class AssociatedCheckboxes extends Checkboxes<
     const selectdOption = ListRadios.resolveSelected(
       value,
       options,
-      option => option.ref
+      (option: Option) => option.ref
     );
 
     if (selectdOption && onDeferLoad && selectdOption.defer) {
       onDeferLoad(selectdOption);
     }
+  }
+
+  handleRetry(option: Option) {
+    const {onDeferLoad} = this.props;
+    onDeferLoad?.(option);
   }
 
   render() {
@@ -88,8 +112,9 @@ export class AssociatedCheckboxes extends Checkboxes<
     const selectdOption = ListRadios.resolveSelected(
       this.state.leftValue,
       options,
-      option => option.ref
+      (option: Option) => option.ref
     );
+    const __ = this.props.translate;
 
     return (
       <div className={cx('AssociatedCheckboxes', className)}>
@@ -115,8 +140,28 @@ export class AssociatedCheckboxes extends Checkboxes<
         <div className={cx('AssociatedCheckboxes-right')}>
           {this.state.leftValue ? (
             selectdOption ? (
-              selectdOption.defer && selectdOption.loading ? (
-                <Spinner size="sm" show />
+              selectdOption.defer && !selectdOption.loaded ? (
+                <div className={cx('AssociatedCheckboxes-box')}>
+                  <div
+                    className={cx(
+                      'AssociatedCheckboxes-reload',
+                      selectdOption.loading ? 'is-spin' : 'is-clickable'
+                    )}
+                    onClick={
+                      selectdOption.loading
+                        ? undefined
+                        : this.handleRetry.bind(this, selectdOption)
+                    }
+                  >
+                    <Icon icon="reload" className="icon" />
+                  </div>
+
+                  {selectdOption.loading ? (
+                    <p>{__('加载中')}</p>
+                  ) : (
+                    <p>{__('点击刷新重新加载')}</p>
+                  )}
+                </div>
               ) : rightMode === 'table' ? (
                 <TableCheckboxes
                   columns={columns!}
@@ -149,13 +194,13 @@ export class AssociatedCheckboxes extends Checkboxes<
                 />
               )
             ) : (
-              <div className={cx('AssociatedCheckboxes-placeholder')}>
-                配置错误，选项无法与左侧选项对应
+              <div className={cx('AssociatedCheckboxes-box')}>
+                {__('配置错误，选项无法与左侧选项对应')}
               </div>
             )
           ) : (
-            <div className={cx('AssociatedCheckboxes-placeholder')}>
-              请先选择左侧数据
+            <div className={cx('AssociatedCheckboxes-box')}>
+              {__('请先选择左侧数据')}
             </div>
           )}
         </div>
@@ -165,7 +210,9 @@ export class AssociatedCheckboxes extends Checkboxes<
 }
 
 export default themeable(
-  uncontrollable(AssociatedCheckboxes, {
-    value: 'onChange'
-  })
+  localeable(
+    uncontrollable(AssociatedCheckboxes, {
+      value: 'onChange'
+    })
+  )
 );

@@ -5,7 +5,7 @@
  */
 
 import NotFound from './404';
-import {default as Alert, alert, confirm} from './Alert';
+import {default as Alert, alert, confirm, prompt} from './Alert';
 import {default as ContextMenu, openContextMenus} from './ContextMenu';
 import AsideNav from './AsideNav';
 import Button from './Button';
@@ -49,15 +49,20 @@ import ResultBox from './ResultBox';
 import InputBox from './InputBox';
 import ListRadios from './ListRadios';
 import TreeRadios from './TreeRadios';
+import ListGroup from './ListGroup';
+import NumberInput from './NumberInput';
+import ArrayInput from './ArrayInput';
+import SearchBox from './SearchBox';
 
 export {
   NotFound,
   Alert as AlertComponent,
   alert,
+  confirm,
+  prompt,
   ContextMenu,
   openContextMenus,
   Alert2,
-  confirm,
   AsideNav,
   Button,
   Checkbox,
@@ -100,5 +105,9 @@ export {
   ResultBox,
   InputBox,
   ListRadios,
-  TreeRadios
+  SearchBox,
+  TreeRadios,
+  ListGroup,
+  NumberInput,
+  ArrayInput
 };

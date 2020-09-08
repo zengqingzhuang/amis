@@ -1,17 +1,18 @@
 /**
  * 级联多选框，支持无限极。从左侧到右侧一层层点选。
  */
-import {Checkboxes, CheckboxesProps} from './Checkboxes';
+import {BaseCheckboxes, BaseCheckboxesProps} from './Checkboxes';
 import {themeable} from '../theme';
 import React from 'react';
-import uncontrollable from 'uncontrollable';
+import {uncontrollable} from 'uncontrollable';
 import Checkbox from './Checkbox';
 import {Option} from './Select';
 import {getTreeDepth} from '../utils/helper';
 import times from 'lodash/times';
 import Spinner from './Spinner';
+import {localeable} from '../locale';
 
-export interface ChainedCheckboxesProps extends CheckboxesProps {
+export interface ChainedCheckboxesProps extends BaseCheckboxesProps {
   defaultSelectedIndex?: string;
 }
 
@@ -19,7 +20,7 @@ export interface ChainedCheckboxesState {
   selected: Array<string>;
 }
 
-export class ChainedCheckboxes extends Checkboxes<
+export class ChainedCheckboxes extends BaseCheckboxes<
   ChainedCheckboxesProps,
   ChainedCheckboxesState
 > {
@@ -119,10 +120,11 @@ export class ChainedCheckboxes extends Checkboxes<
       placeholder,
       classnames: cx,
       option2value,
-      itemRender
+      itemRender,
+      translate: __
     } = this.props;
 
-    this.valueArray = Checkboxes.value2array(value, options, option2value);
+    this.valueArray = BaseCheckboxes.value2array(value, options, option2value);
     let body: Array<React.ReactNode> = [];
 
     if (Array.isArray(options) && options.length) {
@@ -136,18 +138,21 @@ export class ChainedCheckboxes extends Checkboxes<
             body,
             options,
             subTitle,
-            indexes
+            indexes,
+            placeholder
           }: {
             body: Array<React.ReactNode>;
             options: Array<Option> | null;
             subTitle?: string;
             indexes: Array<number>;
+            placeholder?: string;
           },
           selected,
           depth
         ) => {
           let nextOptions: Array<Option> = [];
           let nextSubTitle: string = '';
+          let nextPlaceholder: string = '';
           let nextIndexes = indexes;
 
           body.push(
@@ -157,25 +162,31 @@ export class ChainedCheckboxes extends Checkboxes<
                   {subTitle}
                 </div>
               ) : null}
-              {Array.isArray(options) && options.length
-                ? options.map((option, index) => {
-                    const id = indexes.concat(index).join('-');
+              {Array.isArray(options) && options.length ? (
+                options.map((option, index) => {
+                  const id = indexes.concat(index).join('-');
 
-                    if (id === selected) {
-                      nextSubTitle = option.subTitle;
-                      nextOptions = option.children!;
-                      nextIndexes = indexes.concat(index);
-                    }
+                  if (id === selected) {
+                    nextSubTitle = option.subTitle;
+                    nextOptions = option.children!;
+                    nextIndexes = indexes.concat(index);
+                    nextPlaceholder = option.placeholder;
+                  }
 
-                    return this.renderOption(option, index, depth, id);
-                  })
-                : null}
+                  return this.renderOption(option, index, depth, id);
+                })
+              ) : (
+                <div className={cx('ChainedCheckboxes-placeholder')}>
+                  {__(placeholder)}
+                </div>
+              )}
             </div>
           );
 
           return {
             options: nextOptions,
             subTitle: nextSubTitle,
+            placeholder: nextPlaceholder,
             indexes: nextIndexes,
             body: body
           };
@@ -183,7 +194,8 @@ export class ChainedCheckboxes extends Checkboxes<
         {
           options,
           body,
-          indexes: []
+          indexes: [],
+          placeholder
         }
       );
     }
@@ -194,7 +206,7 @@ export class ChainedCheckboxes extends Checkboxes<
           body
         ) : (
           <div className={cx('ChainedCheckboxes-placeholder')}>
-            {placeholder}
+            {__(placeholder)}
           </div>
         )}
       </div>
@@ -203,7 +215,9 @@ export class ChainedCheckboxes extends Checkboxes<
 }
 
 export default themeable(
-  uncontrollable(ChainedCheckboxes, {
-    value: 'onChange'
-  })
+  localeable(
+    uncontrollable(ChainedCheckboxes, {
+      value: 'onChange'
+    })
+  )
 );

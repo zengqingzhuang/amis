@@ -1,7 +1,7 @@
 .#{$ns}ResultBox {
   @include input-input();
   flex-wrap: wrap;
-  padding: 0 3px;
+  padding: 0 px2rem(3px);
   min-height: $Form-input-height;
   align-items: center;
 
@@ -10,12 +10,28 @@
     background-color: $Form-input-onError-bg;
   }
 
-  &.is-focused {
+  &.is-focused,
+  &.is-active,
+  &:focus {
+    outline: none;
     border-color: $Form-input-onFocused-borderColor;
     box-shadow: $Form-input-boxShadow;
 
     @if $Form-input-onFocused-bg !=$Form-input-bg {
       background-color: $Form-input-onFocused-bg;
+    }
+  }
+
+  &.is-clickable:not(.is-disabled) {
+    cursor: pointer;
+
+    &:hover {
+      border-color: $Form-input-onFocused-borderColor;
+      box-shadow: $Form-input-boxShadow;
+
+      @if $Form-input-onFocused-bg !=$Form-input-bg {
+        background-color: $Form-input-onFocused-bg;
+      }
     }
   }
 
@@ -29,11 +45,16 @@
     border-color: $Form-input-onDisabled-borderColor;
   }
 
+  &-singleValue {
+    padding: 0 ($Form-input-paddingX - px2rem(3px));
+  }
+
   &-clear {
     @include input-clear();
     width: px2rem(26px);
     height: px2rem(26px);
     margin: 0 px2rem(-2px);
+    margin-left: auto;
 
     &:hover {
       background: $ResultBox-value-bg;
@@ -53,10 +74,6 @@
 
   > a {
     cursor: pointer;
-  }
-
-  &-mid {
-    flex-grow: 1;
   }
 
   &-value {

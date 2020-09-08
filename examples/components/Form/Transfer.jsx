@@ -428,14 +428,13 @@ export default {
           ]
         },
 
-        ,
         {
           label: '关联选择模式',
           type: 'transfer',
           name: 'b',
           sortable: true,
           searchable: true,
-          deferApi: '/api/mock2/form/deferOptions?label=${label}',
+          deferApi: '/api/mock/form/deferOptions?label=${label}',
           selectMode: 'associated',
           leftMode: 'tree',
           leftOptions: [

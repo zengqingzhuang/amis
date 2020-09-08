@@ -1,7 +1,7 @@
 .#{$ns}Combo {
   &-placeholder {
     color: $text--muted-color;
-    padding-top: px2rem(7px);
+    padding-top: $Form-label-paddingTop;
   }
 
   &-toolbarBtn {
@@ -22,6 +22,11 @@
   }
 
   &-addBtn {
+    > svg {
+      width: $Combo-addBtn-fontSize;
+      height: $Combo-addBtn-fontSize;
+    }
+
     font-size: $Combo-addBtn-fontSize;
 
     @include button-size(
@@ -64,16 +69,23 @@
   }
 
   &-item {
-    // background: $white;
+    background: $Page-main-bg;
   }
 
   &-itemDrager {
     cursor: move;
 
+    > a {
+      color: $icon-color;
+
+      &:hover {
+        color: $icon-onHover-color;
+      }
+    }
+
     svg {
-      width: px2rem(20px);
-      height: px2rem(20px);
-      top: $Combo--horizontal-dragger-top;
+      width: px2rem(16px);
+      height: px2rem(16px);
     }
   }
 
@@ -119,7 +131,7 @@
     }
 
     .#{$ns}Combo-itemDrager {
-      padding: 0 px2rem(6px) 0 0;
+      padding: $Combo--horizontal-dragger-top px2rem(6px) 0 0;
     }
   }
 
@@ -210,7 +222,7 @@
 
     > .#{$ns}Combo-items > .#{$ns}Combo-item > .#{$ns}Combo-itemDrager {
       position: absolute;
-      top: 0;
+      top: $Combo--horizontal-dragger-top;
       left: px2rem(-30px);
     }
 
@@ -269,6 +281,7 @@
 
   .#{$ns}Combo--ver .#{$ns}Combo-item {
     display: inline-block;
+    min-width: $Form-control-widthBase;
   }
 }
 

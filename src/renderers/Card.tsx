@@ -12,6 +12,7 @@ import QuickEdit from './QuickEdit';
 import PopOver from './PopOver';
 import {TableCell} from './Table';
 import Copyable from './Copyable';
+import {Icon} from '../components/icons';
 
 export interface CardProps extends RendererProps {
   onCheck: (item: IItem) => void;
@@ -115,7 +116,7 @@ export class Card extends React.Component<CardProps> {
     if (dragging) {
       return (
         <div className={cx('Card-dragBtn')}>
-          <i className="fa fa-exchange" />
+          <Icon icon="drag-bar" className="icon" />
         </div>
       );
     } else if (selectable && !hideCheckToggler) {
@@ -298,16 +299,18 @@ export class Card extends React.Component<CardProps> {
         title: titleTpl,
         subTitle: subTitleTpl,
         subTitlePlaceholder,
-        desc: descTpl,
-        descPlaceholder
+        desc: descTpl
       } = header;
+
+      const descPlaceholder =
+        header.descriptionPlaceholder || header.descPlaceholder;
 
       const highlight = !!evalExpression(highlightTpl, data as object);
       const avatar = filter(avatarTpl, data, '| raw');
       const avatarText = filter(avatarTextTpl, data);
       const title = filter(titleTpl, data);
       const subTitle = filter(subTitleTpl, data);
-      const desc = filter(descTpl, data);
+      const desc = filter(header.description || descTpl, data);
 
       heading = (
         <div className={cx('Card-heading', header.className)}>
@@ -426,13 +429,16 @@ export class CardItemFieldRenderer extends TableCell {
 
   static propsList = [
     'quickEdit',
+    'quickEditEnabledOn',
     'popOver',
     'copyable',
+    'inline',
     ...TableCell.propsList
   ];
 
   render() {
     let {
+      type,
       className,
       render,
       style,

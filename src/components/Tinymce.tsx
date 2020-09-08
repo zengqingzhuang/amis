@@ -4,6 +4,7 @@ import React from 'react';
 import tinymce from 'tinymce/tinymce';
 
 // A theme is also required
+import 'tinymce/icons/default/index';
 import 'tinymce/themes/silver';
 import 'tinymce/skins/ui/oxide/skin.css';
 
@@ -35,8 +36,9 @@ import 'tinymce/plugins/template';
 import 'tinymce/plugins/nonbreaking';
 import 'tinymce/plugins/emoticons';
 import 'tinymce/plugins/emoticons/js/emojis';
+import {LocaleProps} from '../locale';
 
-interface TinymceEditorProps {
+interface TinymceEditorProps extends LocaleProps {
   model: string;
   onModelChange?: (value: string) => void;
   onFocus?: () => void;
@@ -58,12 +60,14 @@ export default class TinymceEditor extends React.Component<TinymceEditorProps> {
   elementRef: React.RefObject<HTMLTextAreaElement> = React.createRef();
 
   componentDidMount() {
+    const locale = this.props.locale;
+
     this.config = {
       inline: false,
       skin: false,
       content_css: false,
       height: 400,
-      language: 'zh_CN',
+      language: !locale || locale === 'zh-cn' ? 'zh_CN' : 'en',
       plugins: [
         'advlist autolink link image lists charmap print preview hr anchor pagebreak spellchecker',
         'searchreplace wordcount visualblocks visualchars code fullscreen insertdatetime media nonbreaking',
@@ -121,6 +125,17 @@ export default class TinymceEditor extends React.Component<TinymceEditorProps> {
     };
 
     tinymce.init(this.config);
+  }
+
+  componentDidUpdate(prevProps: TinymceEditorProps) {
+    const props = this.props;
+
+    if (
+      props.model !== prevProps.model &&
+      props.model !== this.currentContent
+    ) {
+      this.editor?.setContent(props.model || '');
+    }
   }
 
   componentWillUnmount() {

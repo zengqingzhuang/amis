@@ -10,6 +10,7 @@ import {findDOMNode} from 'react-dom';
 import {IModalStore, ModalStore} from '../store/modal';
 import {filter} from '../utils/tpl';
 import {Spinner} from '../components';
+import {IServiceStore} from '../store/service';
 
 export interface DrawerProps extends RendererProps {
   title?: string; // 标题
@@ -113,7 +114,7 @@ export default class Drawer extends React.Component<DrawerProps, object> {
   }
 
   buildActions(): Array<Action> {
-    const {actions, confirm} = this.props;
+    const {actions, confirm, translate: __} = this.props;
 
     if (typeof actions !== 'undefined') {
       return actions;
@@ -123,14 +124,14 @@ export default class Drawer extends React.Component<DrawerProps, object> {
     ret.push({
       type: 'button',
       actionType: 'close',
-      label: '取消'
+      label: __('取消')
     });
 
     if (confirm) {
       ret.push({
         type: 'button',
         actionType: 'confirm',
-        label: '确认',
+        label: __('确认'),
         primary: true
       });
     }
@@ -276,7 +277,10 @@ export default class Drawer extends React.Component<DrawerProps, object> {
       disabled: store.loading,
       onAction: this.handleAction,
       onFinished: this.handleChildFinished,
-      popOverContainer: this.getPopOverContainer
+      popOverContainer: this.getPopOverContainer,
+      onChange: this.handleFormChange,
+      onInit: this.handleFormInit,
+      onSaved: this.handleFormSaved
     };
 
     if (schema.type === 'form') {
@@ -286,11 +290,6 @@ export default class Drawer extends React.Component<DrawerProps, object> {
         submitText: null,
         ...schema
       };
-
-      // 同步数据到 Dialog 层，方便 actions 根据表单数据联动。
-      subProps.onChange = this.handleFormChange;
-      subProps.onInit = this.handleFormInit;
-      subProps.onSaved = this.handleFormSaved;
     }
 
     return render(`body${key ? `/${key}` : ''}`, schema, subProps);
@@ -538,7 +537,9 @@ export default class Drawer extends React.Component<DrawerProps, object> {
   storeType: ModalStore.name,
   storeExtendsData: false,
   name: 'drawer',
-  isolateScope: true
+  isolateScope: true,
+  shouldSyncSuperStore: (store: IServiceStore, props: any) =>
+    store.drawerOpen || props.show
 })
 export class DrawerRenderer extends Drawer {
   static contextType = ScopedContext;
@@ -576,6 +577,15 @@ export class DrawerRenderer extends Drawer {
     }
 
     if (!targets.length) {
+      const page = findLast(
+        components,
+        component => component.props.type === 'page'
+      );
+
+      if (page) {
+        components.push(...page.context.getComponents());
+      }
+
       const form = findLast(
         components,
         component => component.props.type === 'form'
@@ -614,7 +624,9 @@ export class DrawerRenderer extends Drawer {
           ) {
             onConfirm && onConfirm(values, rawAction || action, ctx, targets);
           } else if (action.close) {
-            this.handleSelfClose();
+            action.close === true
+              ? this.handleSelfClose()
+              : this.closeTarget(action.close);
           }
           store.markBusying(false);
         })
@@ -649,6 +661,7 @@ export class DrawerRenderer extends Drawer {
     if (action.actionType === 'close' || action.actionType === 'cancel') {
       store.setCurrentAction(action);
       onClose();
+      action.close && this.closeTarget(action.close);
     } else if (action.actionType === 'confirm') {
       store.setCurrentAction(action);
       this.tryChildrenToHandle(action, data) || onClose();
@@ -679,7 +692,10 @@ export class DrawerRenderer extends Drawer {
             action.redirect && filter(action.redirect, store.data);
           redirect && env.jumpTo(redirect, action);
           action.reload && this.reloadTarget(action.reload, store.data);
-          action.close && this.handleSelfClose();
+          if (action.close) {
+            this.handleSelfClose();
+            this.closeTarget(action.close);
+          }
         })
         .catch(() => {});
     } else if (onAction) {
@@ -761,5 +777,10 @@ export class DrawerRenderer extends Drawer {
   reloadTarget(target: string, data?: any) {
     const scoped = this.context as IScopedContext;
     scoped.reload(target, data);
+  }
+
+  closeTarget(target: string) {
+    const scoped = this.context as IScopedContext;
+    scoped.close(target);
   }
 }

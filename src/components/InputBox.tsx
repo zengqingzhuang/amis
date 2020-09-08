@@ -6,8 +6,9 @@ import {Icon} from './icons';
 
 export interface InputBoxProps
   extends ThemeProps,
-    Omit<React.InputHTMLAttributes<HTMLInputElement>, 'prefix' | 'onChange'> {
+    Omit<React.DOMAttributes<HTMLInputElement>, 'prefix' | 'onChange'> {
   value?: string;
+  readOnly?: boolean;
   onChange?: (value: string) => void;
   onClear?: (e: React.MouseEvent<any>) => void;
   clearable?: boolean;
@@ -34,6 +35,8 @@ export class InputBox extends React.Component<InputBoxProps, InputBoxState> {
 
   @autobind
   clearValue(e: any) {
+    e.preventDefault();
+
     const onClear = this.props.onChange;
     const onChange = this.props.onChange;
     onClear?.(e);
@@ -87,7 +90,8 @@ export class InputBox extends React.Component<InputBoxProps, InputBoxState> {
           className,
           isFocused ? 'is-focused' : '',
           disabled ? 'is-disabled' : '',
-          hasError ? 'is-error' : ''
+          hasError ? 'is-error' : '',
+          rest.onClick ? 'is-clickable' : ''
         )}
       >
         {result}
@@ -99,15 +103,16 @@ export class InputBox extends React.Component<InputBoxProps, InputBoxState> {
           placeholder={placeholder}
           onFocus={this.handleFocus}
           onBlur={this.handleBlur}
+          size={12}
         />
+
+        {children}
 
         {clearable && !disabled && value ? (
           <a onClick={this.clearValue} className={cx('InputBox-clear')}>
             <Icon icon="close" className="icon" />
           </a>
         ) : null}
-
-        {children}
       </div>
     );
   }

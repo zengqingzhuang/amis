@@ -17,6 +17,7 @@ import Sortable from 'sortablejs';
 import {filter} from '../utils/tpl';
 import debounce from 'lodash/debounce';
 import {resizeSensor} from '../utils/resize-sensor';
+import {Icon} from '../components/icons';
 
 export interface Column {
   type: string;
@@ -177,9 +178,9 @@ export default class Cards extends React.Component<GridProps, object> {
   }
 
   componentDidMount() {
-    let parent: HTMLElement | Window | null = getScrollParent(findDOMNode(
-      this
-    ) as HTMLElement);
+    let parent: HTMLElement | Window | null = getScrollParent(
+      findDOMNode(this) as HTMLElement
+    );
     if (!parent || parent === document.body) {
       parent = window;
     }
@@ -282,9 +283,7 @@ export default class Cards extends React.Component<GridProps, object> {
     const afixedDom = dom.querySelector(`.${ns}Cards-fixedTop`) as HTMLElement;
 
     this.body.offsetWidth &&
-      (afixedDom.style.cssText = `top: ${offsetY}px;width: ${
-        this.body.offsetWidth
-      }px;`);
+      (afixedDom.style.cssText = `top: ${offsetY}px;width: ${this.body.offsetWidth}px;`);
     affixed ? afixedDom.classList.add('in') : afixedDom.classList.remove('in');
     // store.markHeaderAffix(clip.top < offsetY && (clip.top + clip.height - 40) > offsetY);
   }
@@ -520,15 +519,13 @@ export default class Cards extends React.Component<GridProps, object> {
         <div className={cx('Cards-heading')}>
           {store.modified && !hideQuickSaveBtn ? (
             <span>
-              {`当前有 ${
-                store.modified
-              } 条记录修改了内容, 但并没有提交。请选择:`}
+              {`当前有 ${store.modified} 条记录修改了内容, 但并没有提交。请选择:`}
               <button
                 type="button"
                 className={cx('Button Button--xs Button--success m-l-sm')}
                 onClick={this.handleSave}
               >
-                <i className="fa fa-check m-r-xs" />
+                <Icon icon="check" className="icon m-r-xs" />
                 提交
               </button>
               <button
@@ -536,7 +533,7 @@ export default class Cards extends React.Component<GridProps, object> {
                 className={cx('Button Button--xs Button--danger m-l-sm')}
                 onClick={this.reset}
               >
-                <i className="fa fa-times m-r-xs" />
+                <Icon icon="close" className="icon m-r-xs" />
                 放弃
               </button>
             </span>
@@ -548,7 +545,7 @@ export default class Cards extends React.Component<GridProps, object> {
                 className={cx('Button Button--xs Button--success m-l-sm')}
                 onClick={this.handleSaveOrder}
               >
-                <i className="fa fa-check m-r-xs" />
+                <Icon icon="check" className="icon m-r-xs" />
                 提交
               </button>
               <button
@@ -556,7 +553,7 @@ export default class Cards extends React.Component<GridProps, object> {
                 className={cx('Button Button--xs Button--danger m-l-sm')}
                 onClick={this.reset}
               >
-                <i className="fa fa-times m-r-xs" />
+                <Icon icon="close" className="icon m-r-xs" />
                 放弃
               </button>
             </span>
@@ -581,7 +578,8 @@ export default class Cards extends React.Component<GridProps, object> {
       showHeader,
       render,
       store,
-      classnames: cx
+      classnames: cx,
+      translate: __
     } = this.props;
 
     if (showHeader === false) {
@@ -607,7 +605,7 @@ export default class Cards extends React.Component<GridProps, object> {
           {child}
           {store.dragging ? (
             <div className={cx('Cards-dragTip')} ref={this.dragTipRef}>
-              请拖动右边的按钮进行排序
+              {__('请拖动顶部的按钮进行排序')}
             </div>
           ) : null}
         </div>
@@ -695,7 +693,7 @@ export default class Cards extends React.Component<GridProps, object> {
   }
 
   renderDragToggler() {
-    const {store, multiple, selectable, env} = this.props;
+    const {store, multiple, selectable, env, translate: __} = this.props;
 
     if (!store.draggable || store.items.length < 2) {
       return null;
@@ -705,7 +703,7 @@ export default class Cards extends React.Component<GridProps, object> {
       <Button
         iconOnly
         key="dragging-toggle"
-        tooltip="对卡片进行排序操作"
+        tooltip={__('对卡片进行排序操作')}
         tooltipContainer={
           env && env.getModalContainer ? env.getModalContainer : undefined
         }
@@ -717,7 +715,7 @@ export default class Cards extends React.Component<GridProps, object> {
           store.dragging && store.clear();
         }}
       >
-        <i className="fa fa-exchange" />
+        <Icon icon="exchange" className="icon r90" />
       </Button>
     );
   }
@@ -753,7 +751,8 @@ export default class Cards extends React.Component<GridProps, object> {
       masonryLayout,
       itemsClassName,
       classnames: cx,
-      data
+      data,
+      translate: __
     } = this.props;
 
     this.renderedToolbars = []; // 用来记录哪些 toolbar 已经渲染了，已经渲染了就不重复渲染了。
@@ -840,7 +839,7 @@ export default class Cards extends React.Component<GridProps, object> {
           </div>
         ) : (
           <div className={cx('Cards-placeholder')}>
-            {filter(placeholder, data)}
+            {render('placeholder', __(placeholder))}
           </div>
         )}
 

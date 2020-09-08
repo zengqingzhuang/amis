@@ -11,6 +11,7 @@ import {isApiOutdated, isEffectiveApi} from '../utils/api';
 import {ScopedContext, IScopedContext} from '../Scoped';
 import {Api} from '../types';
 import {ClassNamesFn, themeable} from '../theme';
+import {Icon} from '../components/icons';
 
 export interface Link {
   className?: string;
@@ -44,9 +45,7 @@ export class Navigation extends React.Component<
   NavigationProps,
   NavigationState
 > {
-  static defaultProps: Partial<NavigationProps> = {
-    togglerClassName: 'fa fa-angle-down'
-  };
+  static defaultProps: Partial<NavigationProps> = {};
 
   mounted: boolean = true;
   constructor(props: NavigationProps) {
@@ -128,7 +127,7 @@ export class Navigation extends React.Component<
       return this.receive(query);
     }
 
-    const {data, env, source} = this.props;
+    const {data, env, source, translate: __} = this.props;
     const finalData = values ? createObject(data, values) : data;
 
     if (!isEffectiveApi(source, data)) {
@@ -144,7 +143,7 @@ export class Navigation extends React.Component<
 
         if (!payload.ok) {
           this.setState({
-            error: payload.msg || '获取链接错误'
+            error: payload.msg || __('获取链接错误')
           });
         } else {
           const links = Array.isArray(payload.data)
@@ -160,7 +159,7 @@ export class Navigation extends React.Component<
 
           this.setState(
             {
-              links: this.syncLinks(this.props, links, true)
+              links: this.syncLinks(this.props, links)
             },
             () => {
               if (
@@ -280,10 +279,12 @@ export class Navigation extends React.Component<
         </a>
 
         {link.children && link.children.length ? (
-          <i
+          <span
             onClick={() => this.toggleLink(link)}
             className={cx('Nav-itemToggler', togglerClassName)}
-          />
+          >
+            <Icon icon="caret" className="icon" />
+          </span>
         ) : null}
 
         {link.children && link.children.length ? (

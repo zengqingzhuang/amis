@@ -1,55 +1,24 @@
-import {types, getRoot, Instance, destroy, isAlive} from 'mobx-state-tree';
+import {types} from 'mobx-state-tree';
 import {extendObject, createObject} from '../utils/helper';
-import {IRendererStore} from './index';
 import {dataMapping} from '../utils/tpl-builtin';
 import {SimpleMap} from '../utils/SimpleMap';
+import {StoreNode} from './node';
 
-export const iRendererStore = types
-  .model('iRendererStore', {
-    id: types.identifier,
-    path: '',
-    storeType: types.string,
+export const iRendererStore = StoreNode.named('iRendererStore')
+  .props({
     hasRemoteData: types.optional(types.boolean, false),
     data: types.optional(types.frozen(), {}),
     initedAt: 0, // 初始 init 的时刻
     updatedAt: 0, // 从服务端更新时刻
     pristine: types.optional(types.frozen(), {}),
-    disposed: false,
-    parentId: '',
-    childrenIds: types.optional(types.array(types.string), []),
     action: types.optional(types.frozen(), undefined),
     dialogOpen: false,
     dialogData: types.optional(types.frozen(), undefined),
     drawerOpen: false,
     drawerData: types.optional(types.frozen(), undefined)
   })
-  .views(self => {
-    return {
-      // todo 不能自己引用自己
-      get parentStore(): any {
-        return isAlive(self) &&
-          self.parentId &&
-          getRoot(self) &&
-          (getRoot(self) as IRendererStore).storeType === 'RendererStore'
-          ? (getRoot(self) as IRendererStore).stores.get(self.parentId)
-          : null;
-      }
-    };
-  })
   .actions(self => {
     const dialogCallbacks = new SimpleMap<(result?: any) => void>();
-
-    function dispose() {
-      // 先标记自己是要销毁的。
-      self.disposed = true;
-      const parent = self.parentStore;
-
-      if (!self.childrenIds.length) {
-        const id = self.id;
-        destroy(self);
-        parent && parent.onChildDispose(id);
-      }
-    }
 
     return {
       initData(data: object = {}) {
@@ -62,7 +31,7 @@ export const iRendererStore = types
         self.data = self.pristine;
       },
 
-      updateData(data: object = {}, tag?: object, replace?:boolean) {
+      updateData(data: object = {}, tag?: object, replace?: boolean) {
         const prev = self.data;
         let newData;
         if (tag) {
@@ -169,16 +138,7 @@ export const iRendererStore = types
           dialogCallbacks.delete(self.drawerData);
           setTimeout(() => callback(result), 200);
         }
-      },
-
-      onChildDispose(childId: string) {
-        const childrenIds = self.childrenIds.filter(item => item !== childId);
-        self.childrenIds.replace(childrenIds);
-
-        self.disposed && dispose();
-      },
-
-      dispose
+      }
     };
   });
 

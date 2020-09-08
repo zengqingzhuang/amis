@@ -4,7 +4,9 @@ import {
   SnapshotIn,
   flow,
   getRoot,
-  hasParent
+  hasParent,
+  isAlive,
+  getEnv
 } from 'mobx-state-tree';
 import {IFormStore} from './form';
 import {str2rules, validate as doValidate} from '../utils/validations';
@@ -27,6 +29,8 @@ import {normalizeOptions, optionValueCompare} from '../components/Select';
 import find from 'lodash/find';
 import {SimpleMap} from '../utils/SimpleMap';
 import memoize from 'lodash/memoize';
+import {TranslateFn} from '../locale';
+import {StoreNode} from './node';
 
 interface IOption {
   value?: string | number | null;
@@ -42,9 +46,8 @@ const ErrorDetail = types.model('ErrorDetail', {
   tag: ''
 });
 
-export const FormItemStore = types
-  .model('FormItemStore', {
-    identifier: types.identifier,
+export const FormItemStore = StoreNode.named('FormItemStore')
+  .props({
     isFocused: false,
     type: '',
     unique: false,
@@ -54,7 +57,7 @@ export const FormItemStore = types
     messages: types.optional(types.frozen(), {}),
     errorData: types.optional(types.array(ErrorDetail), []),
     name: types.string,
-    id: '', // 因为 name 可能会重名，所以加个 id 进来，如果有需要用来定位具体某一个
+    itemId: '', // 因为 name 可能会重名，所以加个 id 进来，如果有需要用来定位具体某一个
     unsetValueOnInvisible: false,
     validated: false,
     validating: false,
@@ -74,11 +77,11 @@ export const FormItemStore = types
   })
   .views(self => {
     function getForm(): any {
-      return hasParent(self, 2) ? getParent(self, 2) : null;
+      return self.parentStore;
     }
 
     function getValue(): any {
-      return getForm() ? getForm().getValueByName(self.name) : undefined;
+      return getForm()?.getValueByName(self.name);
     }
 
     function getLastOptionValue(): any {
@@ -103,9 +106,7 @@ export const FormItemStore = types
       },
 
       get prinstine(): any {
-        return (getParent(self, 2) as IFormStore).getPristineValueByName(
-          self.name
-        );
+        return (getForm() as IFormStore).getPristineValueByName(self.name);
       },
 
       get errors() {
@@ -126,31 +127,43 @@ export const FormItemStore = types
           return [];
         }
 
-        const selected = Array.isArray(value)
-          ? value.map(item =>
-              item && item.hasOwnProperty(self.valueField || 'value')
-                ? item[self.valueField || 'value']
-                : item
-            )
+        const valueArray = Array.isArray(value)
+          ? value
           : typeof value === 'string'
           ? value.split(self.delimiter || ',')
-          : [
-              value && value.hasOwnProperty(self.valueField || 'value')
-                ? value[self.valueField || 'value']
-                : value
-            ];
+          : [value];
 
-        // 保留原来的 label 信息，如果原始值中有 label。
-        if (
-          value &&
-          value.hasOwnProperty(self.labelField || 'label') &&
-          !selected[0].hasOwnProperty(self.labelField || 'label')
-        ) {
-          selected[0] = {
-            [self.labelField || 'label']: value[self.labelField || 'label'],
-            [self.valueField || 'value']: value[self.valueField || 'value']
-          };
-        }
+        const selected = valueArray.map(item =>
+          item && item.hasOwnProperty(self.valueField || 'value')
+            ? item[self.valueField || 'value']
+            : item
+        );
+
+        // Array.isArray(value)
+        //   ? value.map(item =>
+        //       item && item.hasOwnProperty(self.valueField || 'value')
+        //         ? item[self.valueField || 'value']
+        //         : item
+        //     )
+        //   : typeof value === 'string'
+        //   ? value.split(self.delimiter || ',')
+        //   : [
+        //       value && value.hasOwnProperty(self.valueField || 'value')
+        //         ? value[self.valueField || 'value']
+        //         : value
+        //     ];
+
+        // // 保留原来的 label 信息，如果原始值中有 label。
+        // if (
+        //   value &&
+        //   value.hasOwnProperty(self.labelField || 'label') &&
+        //   !selected[0].hasOwnProperty(self.labelField || 'label')
+        // ) {
+        //   selected[0] = {
+        //     [self.labelField || 'label']: value[self.labelField || 'label'],
+        //     [self.valueField || 'value']: value[self.valueField || 'value']
+        //   };
+        // }
 
         const selectedOptions: Array<any> = [];
 
@@ -163,7 +176,7 @@ export const FormItemStore = types
           if (matched) {
             selectedOptions.push(matched);
           } else {
-            let unMatched = (value && value[index]) || item;
+            let unMatched = (valueArray && valueArray[index]) || item;
 
             if (
               unMatched &&
@@ -229,7 +242,7 @@ export const FormItemStore = types
       }
 
       typeof type !== 'undefined' && (self.type = type);
-      typeof id !== 'undefined' && (self.id = id);
+      typeof id !== 'undefined' && (self.itemId = id);
       typeof messages !== 'undefined' && (self.messages = messages);
       typeof required !== 'undefined' && (self.required = !!required);
       typeof unique !== 'undefined' && (self.unique = !!unique);
@@ -291,7 +304,13 @@ export const FormItemStore = types
       }
 
       addError(
-        doValidate(self.value, self.form.data, self.rules, self.messages)
+        doValidate(
+          self.value,
+          self.form.data,
+          self.rules,
+          self.messages,
+          self.__
+        )
       );
       self.validated = true;
 
@@ -308,7 +327,7 @@ export const FormItemStore = types
             item => item !== self && self.value && item.value === self.value
           )
         ) {
-          addError(`当前值不唯一`);
+          addError(self.__('`当前值不唯一`'));
         }
       }
 
@@ -354,11 +373,13 @@ export const FormItemStore = types
     const fetchOptions: (
       api: Api,
       data?: object,
-      config?: fetchOptions
+      config?: fetchOptions,
+      setErrorFlag?: boolean
     ) => Promise<Payload | null> = flow(function* getInitData(
       api: string,
       data: object,
-      config?: fetchOptions
+      config?: fetchOptions,
+      setErrorFlag?: boolean
     ) {
       try {
         if (loadCancel) {
@@ -369,23 +390,22 @@ export const FormItemStore = types
 
         self.loading = true;
 
-        const json: Payload = yield (getRoot(self) as IRendererStore).fetcher(
-          api,
-          data,
-          {
-            autoAppend: false,
-            cancelExecutor: (executor: Function) => (loadCancel = executor),
-            ...config
-          }
-        );
+        const json: Payload = yield getEnv(self).fetcher(api, data, {
+          autoAppend: false,
+          cancelExecutor: (executor: Function) => (loadCancel = executor),
+          ...config
+        });
         loadCancel = null;
         let result: any = null;
 
         if (!json.ok) {
-          setError(
-            `加载选项失败，原因：${json.msg || (config && config.errorMessage)}`
-          );
-          (getRoot(self) as IRendererStore).notify(
+          setErrorFlag !== false &&
+            setError(
+              self.__('加载选项失败，原因：{{reason}}', {
+                reason: json.msg || (config && config.errorMessage)
+              })
+            );
+          getEnv(self).notify(
             'error',
             self.errors.join(''),
             json.msgTimeout !== undefined
@@ -402,21 +422,20 @@ export const FormItemStore = types
         self.loading = false;
         return result;
       } catch (e) {
-        const root = getRoot(self) as IRendererStore;
-        if (root.storeType !== 'RendererStore') {
-          // 已经销毁了，不管这些数据了。
-          return;
-        }
+        const env = getEnv(self);
 
         self.loading = false;
 
-        if (root.isCancel(e)) {
+        if (!isAlive(self) || self.disposed) {
+          return;
+        }
+
+        if (env.isCancel(e)) {
           return;
         }
 
         console.error(e.stack);
-        getRoot(self) &&
-          (getRoot(self) as IRendererStore).notify('error', e.message);
+        env.notify('error', e.message);
         return;
       }
     } as any);
@@ -426,7 +445,8 @@ export const FormItemStore = types
       data?: object,
       config?: fetchOptions,
       clearValue?: boolean,
-      onChange?: (value: any) => void
+      onChange?: (value: any) => void,
+      setErrorFlag?: boolean
     ) => Promise<Payload | null> = flow(function* getInitData(
       api: string,
       data: object,
@@ -436,9 +456,10 @@ export const FormItemStore = types
         value: any,
         submitOnChange: boolean,
         changeImmediately: boolean
-      ) => void
+      ) => void,
+      setErrorFlag?: boolean
     ) {
-      let json = yield fetchOptions(api, data, config);
+      let json = yield fetchOptions(api, data, config, setErrorFlag);
       if (!json) {
         return;
       }
@@ -490,8 +511,15 @@ export const FormItemStore = types
         })
       );
 
-      let json = yield fetchOptions(api, data, config);
+      let json = yield fetchOptions(api, data, config, false);
       if (!json) {
+        setOptions(
+          spliceTree(self.options, indexes, 1, {
+            ...option,
+            loading: false,
+            error: true
+          })
+        );
         return;
       }
 
@@ -523,6 +551,12 @@ export const FormItemStore = types
 
       const form = self.form;
       const value = self.value;
+
+      // 有可能销毁了
+      if (!form) {
+        return;
+      }
+
       const selected = Array.isArray(value)
         ? value.map(item =>
             item && item.hasOwnProperty(self.valueField || 'value')

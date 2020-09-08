@@ -11,10 +11,11 @@ import 'moment/locale/zh-cn';
 import {Icon} from './icons';
 import PopOver from './PopOver';
 import Overlay from './Overlay';
-import {ClassNamesFn, themeable} from '../theme';
+import {ClassNamesFn, themeable, ThemeProps} from '../theme';
 import {PlainObject} from '../types';
 import Calendar from './calendar/Calendar';
 import 'react-datetime/css/react-datetime.css';
+import {localeable, LocaleProps, TranslateFn} from '../locale';
 
 const availableShortcuts: {[propName: string]: any} = {
   now: {
@@ -97,9 +98,9 @@ const availableShortcuts: {[propName: string]: any} = {
 const advancedShortcuts = [
   {
     regexp: /^(\d+)hoursago$/,
-    resolve: (_: string, hours: string) => {
+    resolve: (__: TranslateFn, _: string, hours: string) => {
       return {
-        label: `${hours}小时前`,
+        label: __('{{hours}}小时前', {hours}),
         date: (now: moment.Moment) => {
           return now.subtract(hours, 'hours');
         }
@@ -108,9 +109,9 @@ const advancedShortcuts = [
   },
   {
     regexp: /^(\d+)hourslater$/,
-    resolve: (_: string, hours: string) => {
+    resolve: (__: TranslateFn, _: string, hours: string) => {
       return {
-        label: `${hours}小时后`,
+        label: __('{{hours}}小时后', {hours}),
         date: (now: moment.Moment) => {
           return now.add(hours, 'hours');
         }
@@ -119,9 +120,9 @@ const advancedShortcuts = [
   },
   {
     regexp: /^(\d+)daysago$/,
-    resolve: (_: string, days: string) => {
+    resolve: (__: TranslateFn, _: string, days: string) => {
       return {
-        label: `${days}天前`,
+        label: __('{{days}}天前', {days}),
         date: (now: moment.Moment) => {
           return now.subtract(days, 'days');
         }
@@ -130,9 +131,9 @@ const advancedShortcuts = [
   },
   {
     regexp: /^(\d+)dayslater$/,
-    resolve: (_: string, days: string) => {
+    resolve: (__: TranslateFn, _: string, days: string) => {
       return {
-        label: `${days}天后`,
+        label: __('{{days}}天后', {days}),
         date: (now: moment.Moment) => {
           return now.add(days, 'days');
         }
@@ -141,9 +142,9 @@ const advancedShortcuts = [
   },
   {
     regexp: /^(\d+)weeksago$/,
-    resolve: (_: string, weeks: string) => {
+    resolve: (__: TranslateFn, _: string, weeks: string) => {
       return {
-        label: `${weeks}周前`,
+        label: __('{{weeks}}周前', {weeks}),
         date: (now: moment.Moment) => {
           return now.subtract(weeks, 'weeks');
         }
@@ -152,9 +153,9 @@ const advancedShortcuts = [
   },
   {
     regexp: /^(\d+)weekslater$/,
-    resolve: (_: string, weeks: string) => {
+    resolve: (__: TranslateFn, _: string, weeks: string) => {
       return {
-        label: `${weeks}周后`,
+        label: __('{{weeks}}周后', {weeks}),
         date: (now: moment.Moment) => {
           return now.add(weeks, 'weeks');
         }
@@ -163,9 +164,9 @@ const advancedShortcuts = [
   },
   {
     regexp: /^(\d+)monthsago$/,
-    resolve: (_: string, months: string) => {
+    resolve: (__: TranslateFn, _: string, months: string) => {
       return {
-        label: `${months}月前`,
+        label: __('{{months}}月前', {months}),
         date: (now: moment.Moment) => {
           return now.subtract(months, 'months');
         }
@@ -174,9 +175,9 @@ const advancedShortcuts = [
   },
   {
     regexp: /^(\d+)monthslater$/,
-    resolve: (_: string, months: string) => {
+    resolve: (__: TranslateFn, _: string, months: string) => {
       return {
-        label: `${months}月后`,
+        label: __('{{months}}月后', {months}),
         date: (now: moment.Moment) => {
           return now.add(months, 'months');
         }
@@ -185,9 +186,9 @@ const advancedShortcuts = [
   },
   {
     regexp: /^(\d+)quartersago$/,
-    resolve: (_: string, quarters: string) => {
+    resolve: (__: TranslateFn, _: string, quarters: string) => {
       return {
-        label: `${quarters}季度前`,
+        label: __('{{quarters}}季度前', {quarters}),
         date: (now: moment.Moment) => {
           return now.subtract(quarters, 'quarters');
         }
@@ -196,9 +197,9 @@ const advancedShortcuts = [
   },
   {
     regexp: /^(\d+)quarterslater$/,
-    resolve: (_: string, quarters: string) => {
+    resolve: (__: TranslateFn, _: string, quarters: string) => {
       return {
-        label: `${quarters}季度后`,
+        label: __('{{quarters}}季度后', {quarters}),
         date: (now: moment.Moment) => {
           return now.add(quarters, 'quarters');
         }
@@ -226,17 +227,14 @@ export type ShortCuts =
   | ShortCutDate
   | ShortCutDateRange;
 
-export interface DateProps {
+export interface DateProps extends LocaleProps, ThemeProps {
   viewMode: 'years' | 'months' | 'days' | 'time';
   className?: string;
-  classPrefix: string;
-  classnames: ClassNamesFn;
   placeholder?: string;
   inputFormat?: string;
   timeFormat?: string;
   format?: string;
-  timeConstrainst?: object;
-  closeOnSelect?: boolean;
+  closeOnSelect: boolean;
   disabled?: boolean;
   minDate?: moment.Moment;
   maxDate?: moment.Moment;
@@ -247,7 +245,14 @@ export interface DateProps {
   value: any;
   shortcuts: string | Array<ShortCuts>;
   overlayPlacement: string;
-  [propName: string]: any;
+  minTime?: moment.Moment;
+  maxTime?: moment.Moment;
+  dateFormat?: string;
+  timeConstraints?: any;
+  popOverContainer?: any;
+
+  // 下面那个千万不要写，写了就会导致 keyof DateProps 得到的结果是 string | number;
+  // [propName: string]: any;
 }
 
 export interface DatePickerState {
@@ -256,12 +261,17 @@ export interface DatePickerState {
   value: moment.Moment | undefined;
 }
 
+function normalizeValue(value: any, format?: string) {
+  if (!value || value === '0') {
+    return undefined;
+  }
+  const v = moment(value, format, true);
+  return v.isValid() ? v : undefined;
+}
+
 export class DatePicker extends React.Component<DateProps, DatePickerState> {
-  static defaultProps: Pick<
-    DateProps,
-    'viewMode' | 'shortcuts' | 'closeOnSelect' | 'overlayPlacement'
-  > = {
-    viewMode: 'days',
+  static defaultProps = {
+    viewMode: 'days' as 'years' | 'months' | 'days' | 'time',
     shortcuts: '',
     closeOnSelect: true,
     overlayPlacement: 'auto'
@@ -269,9 +279,7 @@ export class DatePicker extends React.Component<DateProps, DatePickerState> {
   state: DatePickerState = {
     isOpened: false,
     isFocused: false,
-    value: this.props.value
-      ? moment(this.props.value, this.props.format)
-      : undefined
+    value: normalizeValue(this.props.value, this.props.format)
   };
   constructor(props: DateProps) {
     super(props);
@@ -297,9 +305,7 @@ export class DatePicker extends React.Component<DateProps, DatePickerState> {
   componentWillReceiveProps(nextProps: DateProps) {
     if (this.props.value !== nextProps.value) {
       this.setState({
-        value: nextProps.value
-          ? moment(nextProps.value, nextProps.format)
-          : undefined
+        value: normalizeValue(nextProps.value, nextProps.format)
       });
     }
   }
@@ -429,12 +435,14 @@ export class DatePicker extends React.Component<DateProps, DatePickerState> {
       return availableShortcuts[key];
     }
 
+    const __ = this.props.translate;
+
     for (let i = 0, len = advancedShortcuts.length; i < len; i++) {
       let item = advancedShortcuts[i];
       const m = item.regexp.exec(key);
 
       if (m) {
-        return item.resolve.apply(item, m);
+        return item.resolve.apply(item, [__, ...m]);
       }
     }
 
@@ -452,6 +460,8 @@ export class DatePicker extends React.Component<DateProps, DatePickerState> {
     } else {
       shortcutArr = shortcuts;
     }
+
+    const __ = this.props.translate;
     return (
       <ul className={`${ns}DatePicker-shortcuts`}>
         {shortcutArr.map(item => {
@@ -474,7 +484,7 @@ export class DatePicker extends React.Component<DateProps, DatePickerState> {
               onClick={() => this.selectRannge(shortcut)}
               key={shortcut.key || shortcut.label}
             >
-              <a>{shortcut.label}</a>
+              <a>{__(shortcut.label)}</a>
             </li>
           );
         })}
@@ -498,9 +508,12 @@ export class DatePicker extends React.Component<DateProps, DatePickerState> {
       clearable,
       shortcuts,
       utc,
-      overlayPlacement
+      overlayPlacement,
+      locale,
+      format
     } = this.props;
 
+    const __ = this.props.translate;
     const isOpened = this.state.isOpened;
     let date: moment.Moment | undefined = this.state.value;
 
@@ -526,16 +539,20 @@ export class DatePicker extends React.Component<DateProps, DatePickerState> {
             {date.format(inputFormat)}
           </span>
         ) : (
-          <span className={`${ns}DatePicker-placeholder`}>{placeholder}</span>
+          <span className={`${ns}DatePicker-placeholder`}>
+            {__(placeholder)}
+          </span>
         )}
 
-        {clearable && !disabled && value ? (
+        {clearable && !disabled && normalizeValue(value, format) ? (
           <a className={`${ns}DatePicker-clear`} onClick={this.clearValue}>
             <Icon icon="close" className="icon" />
           </a>
         ) : null}
 
-        <a className={`${ns}DatePicker-toggler`} />
+        <a className={`${ns}DatePicker-toggler`}>
+          <Icon icon="calendar" className="icon" />
+        </a>
 
         {isOpened ? (
           <Overlay
@@ -565,6 +582,7 @@ export class DatePicker extends React.Component<DateProps, DatePickerState> {
                 timeConstraints={timeConstraints}
                 input={false}
                 onClose={this.close}
+                locale={locale}
                 // utc={utc}
               />
             </PopOver>
@@ -575,4 +593,4 @@ export class DatePicker extends React.Component<DateProps, DatePickerState> {
   }
 }
 
-export default themeable(DatePicker);
+export default themeable(localeable(DatePicker));

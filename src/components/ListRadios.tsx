@@ -1,13 +1,14 @@
-import {Checkboxes} from './Checkboxes';
+import {BaseCheckboxes} from './Checkboxes';
 import {themeable, ThemeProps} from '../theme';
 import React from 'react';
-import uncontrollable from 'uncontrollable';
+import {uncontrollable} from 'uncontrollable';
 import Checkbox from './Checkbox';
 import {Option, Options} from './Select';
 import {findTree, autobind} from '../utils/helper';
 import isEqual from 'lodash/isEqual';
+import {LocaleProps, localeable} from '../locale';
 
-export interface ListRadiosProps extends ThemeProps {
+export interface BaseRadiosProps extends ThemeProps, LocaleProps {
   options: Options;
   className?: string;
   placeholder: string;
@@ -20,11 +21,12 @@ export interface ListRadiosProps extends ThemeProps {
   disabled?: boolean;
   clearable?: boolean;
   showRadio?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
-export class ListRadios<
-  T extends ListRadiosProps = ListRadiosProps,
-  S = any
+export class BaseRadios<
+  T extends BaseRadiosProps = BaseRadiosProps,
+  S = {}
 > extends React.Component<T, S> {
   selected: Option | undefined | null;
 
@@ -47,7 +49,7 @@ export class ListRadios<
     let newValue: Option | null = option;
 
     if (clearable) {
-      const prevSelected = ListRadios.resolveSelected(
+      const prevSelected = BaseRadios.resolveSelected(
         value,
         options,
         option2value
@@ -118,10 +120,12 @@ export class ListRadios<
       className,
       placeholder,
       classnames: cx,
-      option2value
+      option2value,
+      onClick
     } = this.props;
+    const __ = this.props.translate;
 
-    this.selected = ListRadios.resolveSelected(value, options, option2value);
+    this.selected = BaseRadios.resolveSelected(value, options, option2value);
     let body: Array<React.ReactNode> = [];
 
     if (Array.isArray(options) && options.length) {
@@ -129,23 +133,27 @@ export class ListRadios<
     }
 
     return (
-      <div className={cx('ListRadios', className)}>
+      <div className={cx('ListRadios', className)} onClick={onClick}>
         {body && body.length ? (
           body
         ) : (
-          <div className={cx('ListRadios-placeholder')}>{placeholder}</div>
+          <div className={cx('ListRadios-placeholder')}>{__(placeholder)}</div>
         )}
       </div>
     );
   }
 }
 
+export class ListRadios extends BaseRadios {}
+
 const themedListRadios = themeable(
-  uncontrollable(ListRadios, {
-    value: 'onChange'
-  })
+  localeable(
+    uncontrollable(ListRadios, {
+      value: 'onChange'
+    })
+  )
 );
 
-themedListRadios.resolveSelected = ListRadios.resolveSelected;
+themedListRadios.resolveSelected = BaseRadios.resolveSelected;
 
 export default themedListRadios;

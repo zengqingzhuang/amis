@@ -125,6 +125,7 @@ export default class CheckboxesControl extends React.Component<
         labelClassName={labelClassName}
         description={option.description}
       >
+        {option[labelField || 'label']}
         {removable ? (
           <a data-tooltip="移除" data-position="left">
             <Icon
@@ -143,7 +144,6 @@ export default class CheckboxesControl extends React.Component<
             />
           </a>
         ) : null}
-        {option[labelField || 'label']}
       </Checkbox>
     );
   }
@@ -165,7 +165,8 @@ export default class CheckboxesControl extends React.Component<
       labelClassName,
       creatable,
       addApi,
-      createBtnLabel
+      createBtnLabel,
+      translate: __
     } = this.props;
 
     let body: Array<React.ReactNode> = [];
@@ -217,13 +218,13 @@ export default class CheckboxesControl extends React.Component<
         {body && body.length ? (
           body
         ) : (
-          <span className={`Form-placeholder`}>{placeholder}</span>
+          <span className={`Form-placeholder`}>{__(placeholder)}</span>
         )}
 
         {(creatable || addApi) && !disabled ? (
           <a className={cx('Checkboxes-addBtn')} onClick={this.handleAddClick}>
             <Icon icon="plus" className="icon" />
-            {createBtnLabel}
+            {__(createBtnLabel)}
           </a>
         ) : null}
       </div>

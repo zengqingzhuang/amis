@@ -47,6 +47,8 @@ export default class Service extends React.Component<ServiceProps> {
     this.reload = this.reload.bind(this);
     this.silentReload = this.silentReload.bind(this);
     this.initInterval = this.initInterval.bind(this);
+    this.afterDataFetch = this.afterDataFetch.bind(this);
+    this.afterSchemaFetch = this.afterSchemaFetch.bind(this);
   }
 
   componentDidMount() {
@@ -68,7 +70,7 @@ export default class Service extends React.Component<ServiceProps> {
           successMessage: fetchSuccess,
           errorMessage: fetchFailed
         })
-        .then(this.initInterval);
+        .then(this.afterDataFetch);
 
     isApiOutdated(
       prevProps.schemaApi,
@@ -81,7 +83,7 @@ export default class Service extends React.Component<ServiceProps> {
           successMessage: fetchSuccess,
           errorMessage: fetchFailed
         })
-        .then(this.initInterval);
+        .then(this.afterSchemaFetch);
   }
 
   componentWillUnmount() {
@@ -102,10 +104,12 @@ export default class Service extends React.Component<ServiceProps> {
     } = this.props;
 
     if (isEffectiveApi(schemaApi, store.data, initFetchSchema)) {
-      store.fetchSchema(schemaApi, store.data, {
-        successMessage: fetchSuccess,
-        errorMessage: fetchFailed
-      });
+      store
+        .fetchSchema(schemaApi, store.data, {
+          successMessage: fetchSuccess,
+          errorMessage: fetchFailed
+        })
+        .then(this.afterSchemaFetch);
     }
 
     if (isEffectiveApi(api, store.data, initFetch, initFetchOn)) {
@@ -114,12 +118,22 @@ export default class Service extends React.Component<ServiceProps> {
           successMessage: fetchSuccess,
           errorMessage: fetchFailed
         })
-        .then(this.initInterval);
+        .then(this.afterDataFetch);
     }
+  }
+
+  afterDataFetch(data: any) {
+    this.initInterval(data);
+  }
+
+  afterSchemaFetch(schema: any) {
+    this.initInterval(schema);
   }
 
   initInterval(value: any) {
     const {interval, silentPolling, stopAutoRefreshWhen, data} = this.props;
+
+    clearTimeout(this.timer);
 
     interval &&
       this.mounted &&
@@ -154,7 +168,7 @@ export default class Service extends React.Component<ServiceProps> {
           successMessage: fetchSuccess,
           errorMessage: fetchFailed
         })
-        .then(this.initInterval);
+        .then(this.afterSchemaFetch);
     }
 
     if (isEffectiveApi(api, store.data)) {
@@ -164,7 +178,7 @@ export default class Service extends React.Component<ServiceProps> {
           successMessage: fetchSuccess,
           errorMessage: fetchFailed
         })
-        .then(this.initInterval);
+        .then(this.afterDataFetch);
     }
   }
 
@@ -213,16 +227,18 @@ export default class Service extends React.Component<ServiceProps> {
     throwErrors: boolean = false,
     delegate?: IScopedContext
   ) {
-    const {onAction, store, env, api} = this.props;
+    const {onAction, store, env, api, translate: __} = this.props;
 
     if (api && action.actionType === 'ajax') {
       store.setCurrentAction(action);
       store
         .saveRemote(action.api as string, data, {
-          successMessage: action.messages && action.messages.success,
-          errorMessage: action.messages && action.messages.failed
+          successMessage: __(action.messages && action.messages.success),
+          errorMessage: __(action.messages && action.messages.failed)
         })
-        .then(async () => {
+        .then(async (payload: any) => {
+          this.afterDataFetch(payload);
+
           if (action.feedback && isVisible(action.feedback, store.data)) {
             await this.openFeedback(action.feedback, store.data);
           }

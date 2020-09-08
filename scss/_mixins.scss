@@ -205,6 +205,7 @@
   height: $height;
 
   .#{$ns}Button-icon:first-child:not(:last-child):not(.pull-right),
+  > svg.icon:not(:last-child):not(.pull-right),
   > .pull-left {
     margin-right: $padding-x;
   }
@@ -309,6 +310,7 @@
   padding: $Form-input-paddingY $Form-input-paddingX;
   font-size: $Form-input-fontSize;
   flex-wrap: wrap;
+  justify-content: space-between;
 
   input {
     flex-basis: px2rem(80px);
@@ -329,10 +331,11 @@
 
 @mixin input-text {
   position: relative;
-  min-width: $Form-control-widthBase;
+  max-width: 100%;
 
   &.is-inline {
     display: inline-block;
+    width: $Form-control-widthBase;
   }
 
   &-input {
@@ -390,4 +393,23 @@
   padding: ($Form-input-height - $Form-input-lineHeight * $Form-input-fontSize)/2
     $gap-sm;
   color: $text--muted-color;
+}
+
+@mixin label-variant($color) {
+  background-color: $color;
+
+  &[href] {
+    &:hover,
+    &:focus {
+      background-color: darken($color, 10%);
+    }
+  }
+}
+
+@mixin icon-color {
+  color: $icon-color;
+
+  &:hover {
+    color: $icon-onHover-color;
+  }
 }

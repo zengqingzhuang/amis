@@ -1,8 +1,8 @@
-import {reigsterTplEnginer, filter} from './tpl';
 import moment from 'moment';
 import {PlainObject} from '../types';
 import isPlainObject from 'lodash/isPlainObject';
 import {createObject, isObject, setVariable, qsstringify} from './helper';
+import {Enginer} from './tpl';
 
 const UNITS = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
@@ -42,7 +42,7 @@ const entityMap: {
   '/': '&#x2F;'
 };
 export const escapeHtml = (str: string) =>
-  String(str).replace(/[&<>"'\/]/g, function(s) {
+  String(str).replace(/[&<>"'\/]/g, function (s) {
     return entityMap[s];
   });
 
@@ -93,7 +93,7 @@ export const filterDate = (
     value = value.trim();
   }
 
-  value = filter(value, data);
+  value = tokenize(value, data);
 
   if (value && typeof value === 'string' && (m = relativeValueRe.exec(value))) {
     const date = new Date();
@@ -166,7 +166,7 @@ export const filters: {
   },
   duration: input => (input ? formatDuration(input) : input),
   bytes: input => (input ? prettyBytes(parseFloat(input)) : input),
-  round: (input, decimals = 0) => {
+  round: (input, decimals = 2) => {
     if (isNaN(input)) {
       return 0;
     }
@@ -218,13 +218,13 @@ export const filters: {
     Array.isArray(input)
       ? input.map(item => resolveVariable(path, item) || item)
       : resolveVariable(path, input) || input,
-  str2date: function(input, inputFormat = 'X', outputFormat = 'X') {
+  str2date: function (input, inputFormat = 'X', outputFormat = 'X') {
     return input
       ? filterDate(input, this, inputFormat).format(outputFormat)
       : '';
   },
   asArray: input => (Array.isArray(input) ? input : input ? [input] : input),
-  filter: function(input, keys, expOrDirective, arg1) {
+  filter: function (input, keys, expOrDirective, arg1) {
     if (!Array.isArray(input) || !keys || !expOrDirective) {
       return input;
     }
@@ -243,11 +243,11 @@ export const filters: {
       fn = value => arg1 == value;
     } else if (directive === 'isIn') {
       let list: Array<any> = arg1 ? getStrOrVariable(arg1, this) : [];
-      list = Array.isArray(list) ? list : [];
+      list = Array.isArray(list) ? list : [list];
       fn = value => !!~list.indexOf(value);
     } else if (directive === 'notIn') {
       let list: Array<any> = arg1 ? getStrOrVariable(arg1, this) : [];
-      list = Array.isArray(list) ? list : [];
+      list = Array.isArray(list) ? list : [list];
       fn = value => !~list.indexOf(value);
     } else {
       if (directive !== 'match') {
@@ -284,7 +284,7 @@ export const filters: {
     return decodeURIComponent(
       atob(str)
         .split('')
-        .map(function(c) {
+        .map(function (c) {
           return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         })
         .join('')
@@ -678,10 +678,11 @@ export function dataMapping(to: any, from: PlainObject): any {
   return ret;
 }
 
-export function register() {
-  reigsterTplEnginer('builtin', {
-    test: str => !!~str.indexOf('$'),
+export function register(): Enginer & {name: string} {
+  return {
+    name: 'builtin',
+    test: (str: string) => !!~str.indexOf('$'),
     compile: (str: string, data: object, defaultFilter = '| html') =>
       tokenize(str, data, defaultFilter)
-  });
+  };
 }

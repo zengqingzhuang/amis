@@ -29,6 +29,7 @@ import find from 'lodash/find';
 import findIndex from 'lodash/findIndex';
 import Html from '../components/Html';
 import {Spinner} from '../components';
+import {Icon} from '../components/icons';
 
 export interface CRUDProps extends RendererProps {
   api?: Api;
@@ -120,7 +121,10 @@ export default class CRUD extends React.Component<CRUDProps, any> {
     'source',
     'header',
     'columns',
-    'size'
+    'size',
+    'onChange',
+    'onInit',
+    'onSaved'
   ];
   static defaultProps = {
     toolbarInline: true,
@@ -358,7 +362,10 @@ export default class CRUD extends React.Component<CRUDProps, any> {
           redirect && !action.blank && env.jumpTo(redirect, action);
           action.reload
             ? this.reloadTarget(action.reload, data)
-            : this.search(undefined, undefined, true);
+            : redirect
+            ? null
+            : this.search(undefined, undefined, true, true);
+          action.close && this.closeTarget(action.close);
         })
         .catch(() => {});
     } else if (
@@ -438,7 +445,8 @@ export default class CRUD extends React.Component<CRUDProps, any> {
 
             action.reload
               ? this.reloadTarget(action.reload, data)
-              : this.search({[pageField || 'page']: 1}, undefined, true);
+              : this.search({[pageField || 'page']: 1}, undefined, true, true);
+            action.close && this.closeTarget(action.close);
 
             const redirect = action.redirect && filter(action.redirect, data);
             redirect && env.jumpTo(redirect, action);
@@ -629,6 +637,7 @@ export default class CRUD extends React.Component<CRUDProps, any> {
             this.search(
               dialogAction.__from ? {[pageField || 'page']: 1} : undefined,
               undefined,
+              true,
               true
             );
         } else if (
@@ -756,7 +765,15 @@ export default class CRUD extends React.Component<CRUDProps, any> {
                   evalExpression(stopAutoRefreshWhen, data)
                 )) &&
               (this.timer = setTimeout(
-                silentPolling ? this.silentSearch : this.search,
+                silentPolling
+                  ? this.silentSearch.bind(this, undefined, undefined, true)
+                  : this.search.bind(
+                      this,
+                      undefined,
+                      undefined,
+                      undefined,
+                      true
+                    ),
                 Math.max(interval, 3000)
               ));
             return value;
@@ -764,8 +781,8 @@ export default class CRUD extends React.Component<CRUDProps, any> {
       : source && store.initFromScope(data, source);
   }
 
-  silentSearch(values?: object) {
-    return this.search(values, true);
+  silentSearch(values?: object, clearSelection?: boolean, forceReload = false) {
+    return this.search(values, true, clearSelection, forceReload);
   }
 
   handleChangePage(page: number, perPage?: number) {
@@ -851,7 +868,7 @@ export default class CRUD extends React.Component<CRUDProps, any> {
         })
         .then(() => {
           reload && this.reloadTarget(reload, data);
-          this.search();
+          this.search(undefined, undefined, true, true);
         })
         .catch(() => {});
     } else {
@@ -871,7 +888,7 @@ export default class CRUD extends React.Component<CRUDProps, any> {
         .saveRemote(quickSaveItemApi, sendData)
         .then(() => {
           reload && this.reloadTarget(reload, data);
-          this.search();
+          this.search(undefined, undefined, true, true);
         })
         .catch(() => {});
     }
@@ -980,7 +997,7 @@ export default class CRUD extends React.Component<CRUDProps, any> {
         .saveRemote(saveOrderApi, model)
         .then(() => {
           reload && this.reloadTarget(reload, model);
-          this.search();
+          this.search(undefined, undefined, true, true);
         })
         .catch(() => {});
   }
@@ -1127,6 +1144,10 @@ export default class CRUD extends React.Component<CRUDProps, any> {
   }
 
   reloadTarget(target: string, data: any) {
+    // implement this.
+  }
+
+  closeTarget(target: string) {
     // implement this.
   }
 
@@ -1335,16 +1356,20 @@ export default class CRUD extends React.Component<CRUDProps, any> {
   }
 
   renderStatistics() {
-    const {store, classnames: cx} = this.props;
+    const {store, classnames: cx, translate: __} = this.props;
 
     if (store.lastPage <= 1) {
       return null;
     }
 
     return (
-      <div className={cx('Crud-statistics')}>{`${
-        store.page + '/' + store.lastPage
-      }总共${store.total}项。`}</div>
+      <div className={cx('Crud-statistics')}>
+        {__('{{page}}/{{lastPage}} 总共：{{total}} 项。', {
+          page: store.page,
+          lastPage: store.lastPage,
+          total: store.total
+        })}
+      </div>
     );
   }
 
@@ -1353,7 +1378,8 @@ export default class CRUD extends React.Component<CRUDProps, any> {
       store,
       perPageAvailable,
       classnames: cx,
-      classPrefix: ns
+      classPrefix: ns,
+      translate: __
     } = this.props;
 
     const items = childProps.items;
@@ -1371,11 +1397,11 @@ export default class CRUD extends React.Component<CRUDProps, any> {
 
     return (
       <div className={cx('Crud-pageSwitch')}>
-        每页显示
+        {__('每页显示')}
         <Select
           classPrefix={ns}
           searchable={false}
-          placeholder="请选择.."
+          placeholder={__('请选择')}
           options={perPages}
           value={store.perPage + ''}
           onChange={(value: any) => this.handleChangePage(1, value.value)}
@@ -1386,7 +1412,7 @@ export default class CRUD extends React.Component<CRUDProps, any> {
   }
 
   renderLoadMore() {
-    const {store, classPrefix: ns, classnames: cx} = this.props;
+    const {store, classPrefix: ns, classnames: cx, translate: __} = this.props;
     const {page, lastPage} = store;
 
     return page < lastPage ? (
@@ -1397,9 +1423,8 @@ export default class CRUD extends React.Component<CRUDProps, any> {
             this.search({page: page + 1, loadDataMode: 'load-more'})
           }
           size="sm"
-          className="btn-primary"
         >
-          加载更多
+          {__('加载更多')}
         </Button>
       </div>
     ) : (
@@ -1408,7 +1433,7 @@ export default class CRUD extends React.Component<CRUDProps, any> {
   }
 
   renderFilterToggler() {
-    const {store, classnames: cx} = this.props;
+    const {store, classnames: cx, translate: __} = this.props;
 
     if (!store.filterTogggable) {
       return null;
@@ -1421,8 +1446,8 @@ export default class CRUD extends React.Component<CRUDProps, any> {
           'is-active': store.filterVisible
         })}
       >
-        <i className="fa fa-sliders m-r-sm" />
-        筛选
+        <Icon icon="filter" className="icon m-r-xs" />
+        {__('筛选')}
       </button>
     );
   }
@@ -1574,7 +1599,8 @@ export default class CRUD extends React.Component<CRUDProps, any> {
       classnames: cx,
       labelField,
       labelTpl,
-      primaryField
+      primaryField,
+      translate: __
     } = this.props;
 
     if (!store.selectedItems.length) {
@@ -1587,7 +1613,7 @@ export default class CRUD extends React.Component<CRUDProps, any> {
         {store.selectedItems.map((item, index) => (
           <div key={index} className={cx(`Crud-value`)}>
             <span
-              data-tooltip="删除"
+              data-tooltip={__('删除')}
               data-position="bottom"
               className={cx('Crud-valueIcon')}
               onClick={this.unSelectItem.bind(this, item, index)}
@@ -1605,7 +1631,7 @@ export default class CRUD extends React.Component<CRUDProps, any> {
           </div>
         ))}
         <a onClick={this.clearSelection} className={cx('Crud-selectionClear')}>
-          清空
+          {__('清空')}
         </a>
       </div>
     );
@@ -1633,6 +1659,7 @@ export default class CRUD extends React.Component<CRUDProps, any> {
       keepItemSelectionOnPageChange,
       onAction,
       popOverContainer,
+      translate: __,
       ...rest
     } = this.props;
 
@@ -1646,9 +1673,9 @@ export default class CRUD extends React.Component<CRUDProps, any> {
           ? render(
               'filter',
               {
-                title: '条件过滤',
+                title: __('条件过滤'),
                 mode: 'inline',
-                submitText: '搜索',
+                submitText: __('搜索'),
                 ...filter,
                 type: 'form',
                 api: null
@@ -1759,5 +1786,10 @@ export class CRUDRenderer extends CRUD {
   reloadTarget(target: string, data: any) {
     const scoped = this.context as IScopedContext;
     scoped.reload(target, data);
+  }
+
+  closeTarget(target: string) {
+    const scoped = this.context as IScopedContext;
+    scoped.close(target);
   }
 }

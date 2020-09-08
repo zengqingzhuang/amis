@@ -346,7 +346,7 @@ export default class PickerControl extends React.PureComponent<
   }
 
   @autobind
-  renderBody() {
+  renderBody({popOverContainer}: any = {}) {
     const {
       render,
       selectedOptions,
@@ -363,7 +363,8 @@ export default class PickerControl extends React.PureComponent<
       options: options,
       multiple,
       onSelect: embed ? this.handleChange : undefined,
-      ref: this.crudRef
+      ref: this.crudRef,
+      popOverContainer
     }) as JSX.Element;
   }
 
@@ -382,12 +383,16 @@ export default class PickerControl extends React.PureComponent<
       placeholder,
       embed,
       value,
-      selectedOptions
+      selectedOptions,
+      translate: __,
+      popOverContainer
     } = this.props;
     return (
       <div className={cx(`PickerControl`, className)}>
         {embed ? (
-          <div className={cx('Picker')}>{this.renderBody()}</div>
+          <div className={cx('Picker')}>
+            {this.renderBody({popOverContainer})}
+          </div>
         ) : (
           <div
             className={cx(`Picker`, {
@@ -399,7 +404,9 @@ export default class PickerControl extends React.PureComponent<
           >
             <div onClick={this.handleClick} className={cx('Picker-input')}>
               {!selectedOptions.length && placeholder ? (
-                <div className={cx('Picker-placeholder')}>{placeholder}</div>
+                <div className={cx('Picker-placeholder')}>
+                  {__(placeholder)}
+                </div>
               ) : null}
 
               <div className={cx('Picker-valueWrap')}>
@@ -421,13 +428,15 @@ export default class PickerControl extends React.PureComponent<
                 </a>
               ) : null}
 
-              <span onClick={this.open} className={cx('Picker-btn')} />
+              <span onClick={this.open} className={cx('Picker-btn')}>
+                <Icon icon="window-restore" className="icon" />
+              </span>
             </div>
 
             {render(
               'modal',
               {
-                title: '请选择',
+                title: __('请选择'),
                 size: size,
                 type: modalMode,
                 body: {

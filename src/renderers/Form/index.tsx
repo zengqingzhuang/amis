@@ -34,6 +34,8 @@ import {LazyComponent} from '../../components';
 import {isAlive} from 'mobx-state-tree';
 import {asFormItem} from './Item';
 import {SimpleMap} from '../../utils/SimpleMap';
+import {trace} from 'mobx';
+
 export type FormGroup = FormSchema & {
   title?: string;
   className?: string;
@@ -92,6 +94,7 @@ export interface FormProps extends RendererProps, FormSchema {
   clearPersistDataAfterSubmit: boolean; // 提交成功后清空本地缓存
   trimValues?: boolean;
   lazyLoad?: boolean;
+  simpleMode?: boolean;
   onInit?: (values: object, props: any) => any;
   onReset?: (values: object) => void;
   onSubmit?: (values: object, action: any) => any;
@@ -106,8 +109,8 @@ export interface FormProps extends RendererProps, FormSchema {
     saveFailed?: string;
     validateFailed?: string;
   };
-  lazyChange?: boolean;
-  formLazyChange?: boolean;
+  lazyChange?: boolean; // 表单项的
+  formLazyChange?: boolean; // 表单的
 }
 
 export default class Form extends React.Component<FormProps, object> {
@@ -158,11 +161,13 @@ export default class Form extends React.Component<FormProps, object> {
     'onChange',
     'onFailed',
     'onFinished',
+    'onSaved',
     'canAccessSuperData',
     'lazyChange',
     'formLazyChange',
     'lazyLoad',
-    'formInited'
+    'formInited',
+    'simpleMode'
   ];
 
   hooks: {
@@ -200,10 +205,14 @@ export default class Form extends React.Component<FormProps, object> {
   }
 
   componentWillMount() {
-    const {store, canAccessSuperData, persistData} = this.props;
+    const {store, canAccessSuperData, persistData, simpleMode} = this.props;
 
     store.setCanAccessSuperData(canAccessSuperData !== false);
     persistData && store.getPersistData();
+
+    if (simpleMode) {
+      store.setInited(true);
+    }
 
     if (
       store &&
@@ -318,16 +327,6 @@ export default class Form extends React.Component<FormProps, object> {
     this.asyncCancel && this.asyncCancel();
     this.disposeOnValidate && this.disposeOnValidate();
     this.componentCache.dispose();
-    const store = this.props.store;
-
-    if (
-      store &&
-      store.parentStore &&
-      store.parentStore.storeType === 'ComboStore'
-    ) {
-      const combo = store.parentStore as IComboStore;
-      isAlive(combo) && combo.removeForm(store);
-    }
   }
 
   async onInit() {
@@ -459,14 +458,26 @@ export default class Form extends React.Component<FormProps, object> {
     return store.clearErrors();
   }
 
+  getValues() {
+    const {store} = this.props;
+    this.flush();
+    return store.data;
+  }
+
+  setValues(value: any) {
+    const {store} = this.props;
+    this.flush();
+    store.setValues(value);
+  }
+
   submit(fn?: (values: object) => Promise<any>): Promise<any> {
-    const {store, messages} = this.props;
+    const {store, messages, translate: __} = this.props;
     this.flush();
 
     return store.submit(
       fn,
-      this.hooks['validate' || []],
-      messages && messages.validateFailed
+      this.hooks['validate'] || [],
+      __(messages && messages.validateFailed)
     );
   }
 
@@ -563,7 +574,8 @@ export default class Form extends React.Component<FormProps, object> {
       env,
       onChange,
       clearPersistDataAfterSubmit,
-      trimValues
+      trimValues,
+      translate: __
     } = this.props;
 
     // 做动作之前，先把数据同步一下。
@@ -581,7 +593,7 @@ export default class Form extends React.Component<FormProps, object> {
     if (Array.isArray(action.required) && action.required.length) {
       return store.validateFields(action.required).then(result => {
         if (!result) {
-          env.notify('error', '依赖的部分字段没有通过验证，请注意填写！');
+          env.notify('error', __('依赖的部分字段没有通过验证，请注意填写！'));
         } else {
           this.handleAction(
             e,
@@ -602,7 +614,7 @@ export default class Form extends React.Component<FormProps, object> {
       store.setCurrentAction(action);
       return this.submit((values): any => {
         if (onSubmit && onSubmit(values, action) === false) {
-          return Promise.resolve(values);
+          return Promise.resolve(false);
         }
 
         if (target) {
@@ -657,13 +669,18 @@ export default class Form extends React.Component<FormProps, object> {
                 }
               }
 
-              return values;
+              // return values;
             });
         }
 
-        return Promise.resolve(values);
+        return Promise.resolve(null);
       })
         .then(values => {
+          // 有可能 onSubmit return false 了，那么后面的就不应该再执行了。
+          if (values === false) {
+            return store.data;
+          }
+
           if (onFinished && onFinished(values, action) === false) {
             return values;
           }
@@ -681,6 +698,7 @@ export default class Form extends React.Component<FormProps, object> {
             this.reloadTarget(action.reload || reload, store.data);
           }
 
+          action.close && this.closeTarget(action.close);
           return values;
         })
         .catch(reason => {
@@ -706,15 +724,17 @@ export default class Form extends React.Component<FormProps, object> {
     } else if (action.actionType === 'ajax') {
       store.setCurrentAction(action);
       if (!isEffectiveApi(action.api)) {
-        return env.alert(`当 actionType 为 ajax 时，请设置 api 属性`);
+        return env.alert(__(`当 actionType 为 ajax 时，请设置 api 属性`));
       }
 
       return store
         .saveRemote(action.api as Api, data, {
-          successMessage:
-            (action.messages && action.messages.success) || saveSuccess,
-          errorMessage:
+          successMessage: __(
+            (action.messages && action.messages.success) || saveSuccess
+          ),
+          errorMessage: __(
             (action.messages && action.messages.failed) || saveFailed
+          )
         })
         .then(async response => {
           response &&
@@ -737,8 +757,14 @@ export default class Form extends React.Component<FormProps, object> {
           redirect && env.jumpTo(redirect, action);
 
           action.reload && this.reloadTarget(action.reload, store.data);
+          action.close && this.closeTarget(action.close);
         })
-        .catch(() => {});
+        .catch(e => {
+          onFailed && onFailed(e, store.errors);
+          if (throwErrors) {
+            throw e;
+          }
+        });
     } else if (action.actionType === 'reload') {
       store.setCurrentAction(action);
       action.target && this.reloadTarget(action.target, data);
@@ -818,6 +844,10 @@ export default class Form extends React.Component<FormProps, object> {
     // 会被覆写
   }
 
+  closeTarget(target: string) {
+    // 会被覆写
+  }
+
   openFeedback(dialog: any, ctx: any) {
     return new Promise(resolve => {
       const {store} = this.props;
@@ -833,7 +863,7 @@ export default class Form extends React.Component<FormProps, object> {
   }
 
   buildActions() {
-    const {actions, submitText, controls} = this.props;
+    const {actions, submitText, controls, translate: __} = this.props;
 
     if (
       typeof actions !== 'undefined' ||
@@ -852,7 +882,7 @@ export default class Form extends React.Component<FormProps, object> {
     return [
       {
         type: 'submit',
-        label: submitText,
+        label: __(submitText),
         primary: true
       }
     ];
@@ -1016,17 +1046,20 @@ export default class Form extends React.Component<FormProps, object> {
 
       // 自定义组件如果在节点设置了 label name 什么的，就用 formItem 包一层
       // 至少自动支持了 valdiations, label, description 等逻辑。
-      if (control.component && control.label && control.name) {
+      if (
+        control.component &&
+        (control.formItemConfig ||
+          (control.label !== undefined && control.name))
+      ) {
         const cache = this.componentCache.get(control.component);
 
         if (cache) {
           control.component = cache;
         } else {
-          const cache = asFormItem(
-            control.options || {
-              strictMode: false
-            }
-          )(control.component);
+          const cache = asFormItem({
+            strictMode: false,
+            ...control.formItemConfig
+          })(control.component);
           this.componentCache.set(control.component, cache);
           control.component = cache;
         }
@@ -1126,8 +1159,12 @@ export default class Form extends React.Component<FormProps, object> {
       bodyClassName,
       classnames: cx,
       affixFooter,
-      lazyLoad
+      lazyLoad,
+      translate: __
     } = this.props;
+
+    // trace(true);
+    // console.log('Form');
 
     let body: JSX.Element = this.renderBody();
 
@@ -1136,7 +1173,7 @@ export default class Form extends React.Component<FormProps, object> {
         'body',
         {
           type: 'panel',
-          title: title
+          title: __(title)
         },
         {
           className: cx(panelClassName, 'Panel--form'),
@@ -1200,7 +1237,11 @@ export class FormRenderer extends Form {
     super.componentWillUnmount();
   }
 
-  doAction(action: Action, data: object, throwErrors: boolean = false) {
+  doAction(
+    action: Action,
+    data: object = this.props.store.data,
+    throwErrors: boolean = false
+  ) {
     return this.handleAction(undefined, action, data, throwErrors);
   }
 
@@ -1262,6 +1303,11 @@ export class FormRenderer extends Form {
   reloadTarget(target: string, data: any) {
     const scoped = this.context as IScopedContext;
     scoped.reload(target, data);
+  }
+
+  closeTarget(target: string) {
+    const scoped = this.context as IScopedContext;
+    scoped.close(target);
   }
 
   reload(target?: string, query?: any, ctx?: any, silent?: boolean) {

@@ -68,6 +68,15 @@
     > .#{$ns}Table-wrapper {
       border-top: $Table-borderWidth solid $Table-borderColor;
     }
+
+    &.is-fakeHide {
+      > .#{$ns}Table-fixedLeft,
+      > .#{$ns}Table-fixedRight,
+      > .#{$ns}Table-wrapper {
+        visibility: hidden;
+        position: absolute;
+      }
+    }
   }
 
   &-heading {
@@ -117,6 +126,7 @@
     @include clearfix();
     display: flex;
     padding: $Table-toolbar-paddingY $Table-toolbar-paddingX;
+    flex-wrap: wrap;
 
     .#{$ns}DropDown {
       &-menuItem {
@@ -168,6 +178,8 @@
     font-size: $Table-fontSize;
     color: $Table-color;
     background-color: $Table-bg;
+    border-spacing: 0;
+    border-collapse: collapse;
 
     &--withCombine {
       > thead > tr > th,
@@ -204,9 +216,9 @@
     }
 
     > thead > tr {
-      background-color: $Table-thead-bg;
-
       > th {
+        background-color: $Table-thead-bg;
+
         &[colspan] {
           text-align: center;
         }
@@ -224,16 +236,17 @@
         &:not(:last-child) {
           border-right: $Table-thead-borderWidth solid $Table-thead-borderColor;
         }
+        border-bottom: $Table-thead-borderWidth solid $Table-thead-borderColor;
 
         font-size: $Table-thead-fontSize;
         color: $Table-thead-color;
         font-weight: $fontWeightNormal;
         white-space: nowrap;
 
-        .#{$ns}TableCell--title {
-          display: flex;
-          align-items: center;
-        }
+        // .#{$ns}TableCell--title {
+        //   display: flex;
+        //   align-items: center;
+        // }
         .#{$ns}Remark {
           margin-left: $gap-xs;
         }
@@ -244,10 +257,30 @@
       border-top: $Table-borderWidth solid $Table-borderColor;
     }
 
-    > tbody > tr {
-      border-top: $Table-borderWidth solid $Table-borderColor;
+    > thead > tr {
+      border-bottom: $Table-borderWidth solid $Table-borderColor;
+    }
 
-      > td {
+    > tbody > tr {
+      & + tr {
+        border-top: $Table-borderWidth solid $Table-borderColor;
+        > th {
+          border-top: $Table-thead-borderWidth solid $Table-thead-borderColor;
+        }
+      }
+
+      > th {
+        text-align: left;
+        background-color: $Table-thead-bg;
+        // font-size: $Table-thead-fontSize;
+        color: $Table-thead-color;
+        font-weight: $fontWeightNormal;
+        white-space: nowrap;
+        border-right: $Table-thead-borderWidth solid $Table-thead-borderColor;
+      }
+
+      > td,
+      > th {
         padding: $TableCell-paddingY $TableCell-paddingX;
         vertical-align: top;
 
@@ -424,6 +457,7 @@
       border-right: 0;
       width: px2rem(1px);
       padding-right: 0;
+      cursor: move;
     }
 
     > tbody > tr > td.#{$ns}Table-expandCell {
@@ -476,32 +510,32 @@
   &Cell-sortBtn {
     cursor: pointer;
     width: $TableCell-sortBtn-width;
+    height: px2rem(20px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     position: absolute;
     right: $TableCell-paddingX - $TableCell-sortBtn-width / 2;
     top: 50%;
     transform: translateY(-50%);
-    color: $Table-thead-iconColor;
+    color: $icon-color;
 
-    &--up:before {
-      display: inline-block;
-      content: $TableCell-sortBtn--up-icon;
-      font-family: $TableCell-sortBtn--up-iconVendor;
+    &:hover {
+      color: $icon-onHover-color;
     }
 
-    &--down:before {
-      display: inline-block;
-      content: $TableCell-sortBtn--down-icon;
-      font-family: $TableCell-sortBtn--down-iconVendor;
-    }
-
-    &--default:before {
-      display: inline-block;
-      content: $TableCell-sortBtn--default-icon;
-      font-family: $TableCell-sortBtn--default-iconVendor;
+    &--up > svg,
+    &--down > svg,
+    &--default > svg {
+      color: inherit;
+      width: 12x;
+      height: 12px;
     }
 
     &--up,
-    &--down {
+    &--down,
+    &--default {
       display: none;
       position: absolute;
       z-index: 2;
@@ -513,28 +547,40 @@
     }
 
     &--default {
-      font-style: normal;
-      z-index: 1;
-      display: inline-block;
-      opacity: $TableCell-sortBtn--default-opacity;
-
       &.is-active {
-        opacity: $TableCell-sortBtn--default-onActive-opacity;
+        color: $text--muted-color;
+        &:hover {
+          color: $text-color;
+        }
+      }
+    }
+    &--up,
+    &--down {
+      &.is-active {
+        color: $TableCell-sortBtn--onActive-color;
       }
     }
   }
 
   &Cell-searchBtn {
     cursor: pointer;
-    width: $TableCell-searchBtn-width;
+    // width: $TableCell-searchBtn-width;
     position: absolute;
-    right: $TableCell-paddingX - $TableCell-searchBtn-width / 2;
+    right: px2rem(5px);
     top: 50%;
     transform: translateY(-50%);
     color: $text--muted-color;
 
+    svg.icon {
+      width: 12px;
+      height: 12px;
+    }
+
     &:hover {
       color: $text-color;
+    }
+    &.is-active {
+      color: $TableCell-searchBtn--onActive-color;
     }
   }
 
@@ -557,8 +603,17 @@
     transform: translateY(-50%);
     color: $text--muted-color;
 
+    svg.icon {
+      width: 12px;
+      height: 12px;
+    }
+
     &:hover {
       color: $text-color;
+    }
+
+    &.is-active {
+      color: $TableCell-filterBtn--onActive-color;
     }
 
     .#{$ns}Remark {
@@ -651,6 +706,8 @@
     color: $text--loud-color;
     clear: both;
     margin-top: $gap-xs;
+    width: 100%;
+    color: $info;
   }
 
   &-footTable {
@@ -689,25 +746,16 @@
     line-height: 1;
     height: 16px;
 
-    > i {
+    > svg {
       display: inline-block;
       text-align: center;
       cursor: pointer;
-      font-style: normal;
       transition: transform ease-in-out 0.2s, top ease-in-out 0.2s;
       position: relative;
-      left: 1px;
       transform-origin: 50% 50%;
-
-      &:before {
-        line-height: 1;
-        font-size: $Table-expandBtn-fontSize;
-        font-family: $Table-expandBtn-vendor;
-        content: $Table-expandBtn-icon;
-      }
     }
 
-    &.is-active > i {
+    &.is-active > svg {
       transform: rotate(90deg);
     }
 
@@ -721,12 +769,23 @@
     display: inline-block;
     visibility: hidden;
     cursor: move;
+    color: $icon-color;
+
+    &:hover {
+      text-decoration: none;
+      color: $icon-onHover-color;
+    }
   }
 
   &-table > tbody > tr:hover .#{$ns}Table-dragBtn,
   &-table > tbody > tr.is-dragging .#{$ns}Table-dragBtn,
   &-table > tbody > tr.is-drop-allowed .#{$ns}Table-dragBtn {
     visibility: visible;
+  }
+
+  .fake-hide {
+    visibility: hidden;
+    position: absolute;
   }
 }
 
@@ -736,5 +795,14 @@
   > .#{$ns}Button,
   > .#{$ns}Button--disabled-wrap > .#{$ns}Button {
     margin: px2rem(3px);
+  }
+
+  > .#{$ns}Button--disabled-wrap > .#{$ns}Button {
+    padding: 0;
+  }
+
+  > .#{$ns}Button--link {
+    padding: 0;
+    margin-right: px2rem(10px);
   }
 }

@@ -2,7 +2,6 @@
 import cx from 'classnames';
 import React from 'react';
 import hoistNonReactStatic from 'hoist-non-react-statics';
-import {ExtractProps, Omit} from './types';
 
 export type ClassValue =
   | string
@@ -26,6 +25,9 @@ export type ClassNamesFn = (...classes: ClassValue[]) => string;
 interface ThemeConfig {
   classPrefix?: string;
   renderers?: {
+    [propName: string]: any;
+  };
+  components?: {
     [propName: string]: any;
   };
 
@@ -67,6 +69,7 @@ export function makeClassnames(ns?: string) {
 
 export type ThemeInstance = ThemeConfig & {
   getRendererConfig: (name?: string) => any;
+  getComponentConfig: (name?: string) => any;
   classnames: ClassNamesFn;
 };
 
@@ -105,29 +108,41 @@ export function getTheme(theme: string): ThemeInstance {
     config.classnames = config.classnames || makeClassnames(ns);
   }
 
+  if (!config.getComponentConfig) {
+    config.getComponentConfig = (name?: string) =>
+      config.components && name ? config.components[name] : null;
+  }
+
   return config as ThemeInstance;
 }
 
 export interface ThemeProps {
+  className?: string;
   classPrefix: string;
   classnames: ClassNamesFn;
+  theme?: string;
 }
 
-export const ThemeContext = React.createContext('theme');
 export let defaultTheme: string = 'default';
+export const ThemeContext = React.createContext('');
 
 export function themeable<
-  T extends React.ComponentType<ThemeProps & ExtractProps<T>>
+  T extends React.ComponentType<React.ComponentProps<T> & ThemeProps> & {
+    themeKey?: string;
+  }
 >(ComposedComponent: T) {
-  type ComposedProps = JSX.LibraryManagedAttributes<T, ExtractProps<T>>;
-  type Props = Omit<ComposedProps, keyof ThemeProps> & {
+  type OuterProps = JSX.LibraryManagedAttributes<
+    T,
+    Omit<React.ComponentProps<T>, keyof ThemeProps>
+  > & {
     theme?: string;
+    className?: string;
     classPrefix?: string;
     classnames?: ClassNamesFn;
   };
 
   const result = hoistNonReactStatic(
-    class extends React.Component<Props> {
+    class extends React.Component<OuterProps> {
       static displayName = `Themeable(${
         ComposedComponent.displayName || ComposedComponent.name
       })`;
@@ -142,17 +157,21 @@ export function themeable<
         const injectedProps: {
           classPrefix: string;
           classnames: ClassNamesFn;
+          theme: string;
         } = {
           classPrefix: config.classPrefix as string,
-          classnames: config.classnames
+          classnames: config.classnames,
+          theme
         };
 
         return (
           <ThemeContext.Provider value={theme}>
             <ComposedComponent
-              {
-                ...(this.props as any) /* todo, 解决这个类型问题 */
-              }
+              {...config.getComponentConfig(ComposedComponent.themeKey)}
+              {...(this.props as JSX.LibraryManagedAttributes<
+                T,
+                React.ComponentProps<T>
+              >)}
               {...injectedProps}
             />
           </ThemeContext.Provider>

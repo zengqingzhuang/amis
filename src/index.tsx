@@ -11,21 +11,29 @@ import {
   getRendererByName,
   resolveRenderer,
   filterSchema,
-  clearStoresCache
+  clearStoresCache,
+  updateEnv
 } from './factory';
-import {wrapFetcher, buildApi} from './utils/api';
+import { wrapFetcher, buildApi } from './utils/api';
 import {
   filter,
-  reigsterTplEnginer,
+  registerTplEnginer,
   evalExpression,
   evalJS,
   setCustomEvalJs,
   setCustomEvalExpression
 } from './utils/tpl';
 import * as utils from './utils/helper';
-import {resizeSensor} from './utils/resize-sensor';
-import {setIconVendor} from './renderers/Form/IconPickerIcons';
-import {Icon, registerIcon} from './components/icons';
+import { resizeSensor } from './utils/resize-sensor';
+import { setIconVendor } from './renderers/Form/IconPickerIcons';
+import { Icon, registerIcon } from './components/icons';
+import { RegisterStore } from './store';
+import {
+  setDefaultLocale,
+  getDefaultLocale,
+  makeTranslator,
+  register as registerLocale
+} from './locale';
 
 // 注册渲染器
 import './renderers/Action';
@@ -75,6 +83,7 @@ import './renderers/Form/Matrix';
 import './renderers/Form/Range';
 import './renderers/Form/Array';
 import './renderers/Form/Combo';
+import './renderers/Form/ConditionBuilder';
 import './renderers/Form/Container';
 import './renderers/Form/SubForm';
 import './renderers/Form/RichText';
@@ -108,7 +117,7 @@ import './renderers/Page';
 import './renderers/Panel';
 import './renderers/Plain';
 import './renderers/Spinner';
-import './renderers/Table';
+import './renderers/Table/index';
 import './renderers/Tabs';
 import './renderers/Tpl';
 import './renderers/Mapping';
@@ -131,9 +140,9 @@ import './renderers/IFrame';
 import './renderers/QRCode';
 import './renderers/Icon';
 import './renderers/Carousel';
-import Scoped, {ScopedContext} from './Scoped';
+import Scoped, { ScopedContext } from './Scoped';
 
-import {FormItem} from './renderers/Form/Item';
+import { FormItem } from './renderers/Form/Item';
 
 // 兼容旧版本用法
 import './compat';
@@ -148,9 +157,14 @@ import {
   resolveVariable,
   resolveVariableAndFilter
 } from './utils/tpl-builtin';
-import {addRule, str2rules} from './utils/validations';
-import {normalizeOptions} from './components/Select';
-import {OptionsControl} from './renderers/Form/Options';
+import {
+  addRule,
+  str2rules,
+  validate,
+  validateObject
+} from './utils/validations';
+import { normalizeOptions } from './components/Select';
+import { OptionsControl } from './renderers/Form/Options';
 
 import {
   classnames,
@@ -166,7 +180,9 @@ export * from './components/index';
 export {
   render,
   clearStoresCache,
+  updateEnv,
   Renderer,
+  RegisterStore,
   FormItem,
   OptionsControl,
   wrapFetcher,
@@ -176,7 +192,7 @@ export {
   utils,
   resizeSensor,
   registerFilter,
-  reigsterTplEnginer,
+  registerTplEnginer,
   evalExpression,
   evalJS,
   setCustomEvalJs,
@@ -196,10 +212,17 @@ export {
   registerIcon,
   Scoped,
   ScopedContext,
+  validate,
+  validateObject,
   setDefaultTheme,
   theme,
   getTheme,
   classPrefix,
   getClassPrefix,
-  classnames
+  classnames,
+  // 多语言相关
+  getDefaultLocale,
+  setDefaultLocale,
+  registerLocale,
+  makeTranslator
 };
